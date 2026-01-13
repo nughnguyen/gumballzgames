@@ -118,12 +118,15 @@ export default function HomePage() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link 
-                    href="/game/caro/new" 
+                  <button 
+                    onClick={() => {
+                      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                      router.push(`/game/caro/${randomCode}`);
+                    }}
                     className="px-8 py-4 bg-[var(--accent-green)] text-white font-bold rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20"
                   >
                     <i className="fi fi-rr-play"></i> Play Now
-                  </Link>
+                  </button>
                   <div className="flex-1 max-w-md relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <i className="fi fi-rr-keyboard text-[var(--text-tertiary)]"></i>
