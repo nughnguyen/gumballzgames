@@ -11,7 +11,7 @@ interface IconProps {
 }
 
 export default function Icon({ name, size = 24, className = '', color = 'currentColor' }: IconProps) {
-  const icons: Record<string, JSX.Element> = {
+  const icons: Record<string, React.ReactElement> = {
     // Navigation Icons (Placeholders - will be replaced with Flaticon)
     'play': (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
@@ -117,6 +117,3 @@ export default function Icon({ name, size = 24, className = '', color = 'current
 
   return icons[name] || icons['more'];
 }
-
-// Export icon names for TypeScript autocomplete
-export type IconName = keyof typeof icons;
