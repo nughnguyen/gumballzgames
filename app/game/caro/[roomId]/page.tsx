@@ -275,7 +275,7 @@ export default function CaroGamePage() {
     if (room && user) {
       await leaveRoom(room.id, user.id);
     }
-    router.push('/lobby');
+    router.push('/');
   };
 
   if (loading) {

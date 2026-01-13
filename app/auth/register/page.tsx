@@ -38,7 +38,7 @@ export default function RegisterPage() {
 
     try {
       await register(email, password, username);
-      router.push('/lobby');
+      router.push('/');
     } catch (err: any) {
       setError(err.message || 'Failed to register');
     } finally {

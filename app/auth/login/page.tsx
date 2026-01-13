@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/lobby');
+      router.push('/');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {
@@ -88,7 +88,7 @@ export default function LoginPage() {
           </p>
           <p className="text-gray-300">
             Or{' '}
-            <Link href="/lobby" className="text-secondary-300 hover:text-secondary-200 font-semibold">
+            <Link href="/" className="text-secondary-300 hover:text-secondary-200 font-semibold">
               play as guest
             </Link>
           </p>

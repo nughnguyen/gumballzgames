@@ -65,10 +65,10 @@ export default function RoomRedirectPage() {
           <h2 className="text-2xl font-bold text-white mb-4">Room Not Found</h2>
           <p className="text-gray-300 mb-6">{error}</p>
           <button
-            onClick={() => router.push('/lobby')}
+            onClick={() => router.push('/')}
             className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
           >
-            Back to Lobby
+            Back to Home
           </button>
         </div>
       </div>
