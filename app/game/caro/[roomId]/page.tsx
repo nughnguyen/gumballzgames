@@ -70,10 +70,19 @@ export default function CaroGamePage() {
             setMySymbol('X');
           }
         } else {
-          // Join existing room as player 2
+          // Check if already in room
           const roomParticipants = await getRoomParticipants(existingRoom.id);
           
-          if (roomParticipants.length < 2) {
+          const myParticipant = roomParticipants.find(p =>
+            (user?.id && p.user_id === user.id) || 
+            (isGuest && guestNickname && p.guest_nickname === guestNickname)
+          );
+
+          if (myParticipant) {
+             // Already in room, reconnect
+             setMySymbol(myParticipant.player_number === 1 ? 'X' : 'O');
+          } else if (roomParticipants.length < 2) {
+            // Join existing room as player 2
             await joinRoom(
               existingRoom.id,
               2,
@@ -84,13 +93,8 @@ export default function CaroGamePage() {
             // Update room status to playing when second player joins
             await updateRoomStatus(existingRoom.id, 'playing');
           } else {
-            // Room is full, determine which player we are
-            const myParticipant = roomParticipants.find(p =>
-              p.user_id === user?.id || (user?.isGuest && p.guest_nickname === guestNickname)
-            );
-            if (myParticipant) {
-               setMySymbol(myParticipant.player_number === 1 ? 'X' : 'O');
-            }
+            // Room is full and we are not a participant - Spectator mode
+            // setMySymbol(null); 
           }
         }
 
