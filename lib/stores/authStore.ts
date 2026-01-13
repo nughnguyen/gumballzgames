@@ -63,16 +63,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (error) throw error;
 
     if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          username,
-          display_name: username,
-        });
-
-      if (profileError) throw profileError;
+      // Profile is created automatically by database trigger (handle_new_user)
+      
+      // Wait a moment for trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Fetch the created profile
       const { data: profile } = await supabase
