@@ -24,7 +24,8 @@ export default function CaroGamePage() {
   const params = useParams();
   const router = useRouter();
   const roomCode = params.roomId as string;
-  const { user, isGuest, guestNickname } = useAuthStore();
+  const { user, isGuest } = useAuthStore();
+  const guestNickname = user?.guestNickname;
 
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
@@ -49,7 +50,7 @@ export default function CaroGamePage() {
           existingRoom = await createRoom(
             roomCode,
             'caro',
-            user?.id,
+            !isGuest ? user?.id : undefined,
             isGuest ? guestNickname : undefined,
             {}
           );
@@ -59,7 +60,7 @@ export default function CaroGamePage() {
             await joinRoom(
               existingRoom.id,
               1,
-              user?.id,
+              !isGuest ? user?.id : undefined,
               isGuest ? guestNickname : undefined
             );
             setMySymbol('X');
@@ -72,7 +73,7 @@ export default function CaroGamePage() {
             await joinRoom(
               existingRoom.id,
               2,
-              user?.id,
+              !isGuest ? user?.id : undefined,
               isGuest ? guestNickname : undefined
             );
             setMySymbol('O');
