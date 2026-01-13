@@ -1,9 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { generateRoomCode } from '@/lib/utils/roomCode';
+import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 
 export default function HomePage() {
@@ -30,18 +30,6 @@ export default function HomePage() {
     }
   };
 
-  const handleCreateRoom = (gameType: 'caro' | 'battleship' | 'chess') => {
-    const roomCode = generateRoomCode();
-    
-    if (gameType === 'caro') {
-      router.push(`/game/caro/${roomCode}`);
-    } else if (gameType === 'battleship') {
-      router.push(`/game/battleship/${roomCode}`);
-    } else if (gameType === 'chess') {
-      router.push(`/game/chess/${roomCode}`);
-    }
-  };
-
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
       router.push(`/room/${roomCode}`);
@@ -50,10 +38,12 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-white text-xl font-semibold">Loading...</div>
+          <div className="flex justify-center mb-4">
+            <i className="fi fi-rr-spinner text-4xl text-[var(--accent-green)] animate-spin"></i>
+          </div>
+          <div className="text-[var(--text-primary)] text-xl font-semibold">Loading...</div>
         </div>
       </div>
     );
@@ -61,114 +51,204 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Guest Login Modal - Chess.com Style */}
+      {/* Guest Login Modal */}
       {showGuestModal && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 modal-backdrop">
-          <div className="bg-secondary border border-border-primary rounded-lg p-8 w-full max-w-md shadow-2xl">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-accent-green rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">♟</span>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-8 w-full max-w-md shadow-2xl">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[var(--border-primary)]">
+                <i className="fi fi-rr-gamepad text-5xl text-[var(--accent-green)]"></i>
               </div>
-              <h2 className="text-3xl font-bold text-primary mb-2">Welcome!</h2>
-              <p className="text-secondary">Enter your nickname to start playing</p>
+              <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-3">Welcome Player</h2>
+              <p className="text-[var(--text-secondary)]">Enter a nickname to join the action</p>
             </div>
             
-            <input
-              type="text"
-              value={guestNickname}
-              onChange={(e) => setGuestNickname(e.target.value)}
-              placeholder="Your nickname (min 3 characters)"
-              className="w-full px-4 py-3 rounded-lg mb-6 focus:ring-2 focus:ring-accent-green"
-              onKeyPress={(e) => e.key === 'Enter' && handleGuestLogin()}
-              autoFocus
-            />
-            
-            <button
-              onClick={handleGuestLogin}
-              disabled={guestNickname.trim().length < 3}
-              className="w-full py-3 bg-accent-green hover:bg-[#6ea33d] text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Start Playing
-            </button>
+            <div className="space-y-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <i className="fi fi-rr-user text-[var(--text-tertiary)]"></i>
+                </div>
+                <input
+                  type="text"
+                  value={guestNickname}
+                  onChange={(e) => setGuestNickname(e.target.value)}
+                  placeholder="Nickname (min 3 chars)"
+                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] transition-all"
+                  onKeyPress={(e) => e.key === 'Enter' && handleGuestLogin()}
+                  autoFocus
+                />
+              </div>
+              
+              <button
+                onClick={handleGuestLogin}
+                disabled={guestNickname.trim().length < 3}
+                className="w-full py-4 bg-[var(--accent-green)] hover:brightness-110 text-white font-bold rounded-xl transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Start Playing <i className="fi fi-rr-arrow-right"></i>
+              </button>
+
+              <div className="text-center pt-4 border-t border-[var(--border-secondary)]">
+                <Link href="/auth/login" className="text-[var(--accent-green)] hover:underline font-medium text-sm flex items-center justify-center gap-2">
+                  <i className="fi fi-rr-sign-in-alt"></i> or Login with Account
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Main Layout - Chess.com Style */}
-      <div className="flex min-h-screen bg-primary">
+      <div className="flex min-h-screen bg-[var(--bg-primary)]">
         <Sidebar />
         
-        {/* Main Content */}
-        <main className="flex-1 p-8">
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-5xl font-bold text-primary mb-3">
-                Ready to Play?
-              </h1>
-              <p className="text-secondary text-lg">Choose your game and start your adventure</p>
-            </div>
-
-            {/* Join Room Card */}
-            <div className="bg-secondary border border-border-primary rounded-lg p-6">
-              <h2 className="text-xl font-bold text-text-primary mb-4">🔗 Join a Friend's Room</h2>
-              <p className="text-text-secondary mb-4">
-                Enter a room code to join your friend's game
-              </p>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  placeholder="ABC123"
-                  className="flex-1 px-4 py-3 rounded-lg font-mono text-lg tracking-wider focus:ring-2 focus:ring-accent-green"
-                  maxLength={6}
-                />
-                <button
-                  onClick={handleJoinRoom}
-                  disabled={!roomCode.trim()}
-                  className="px-8 py-3 bg-accent-green hover:opacity-80 text-white font-semibold rounded-lg transition-all disabled:opacity-50"
-                >
-                  Join
-                </button>
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-6xl mx-auto space-y-12">
+            
+            {/* Hero Section */}
+            <div className="bg-[var(--bg-secondary)] rounded-2xl p-8 md:p-12 border border-[var(--border-primary)] relative overflow-hidden">
+              <div className="relative z-10 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--accent-green)] text-sm font-medium mb-6">
+                  <i className="fi fi-rr-sparkles"></i> New: Caro Mode Added
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
+                  Play Classic Games <br />
+                  <span className="text-[var(--accent-green)]">With Friends</span>
+                </h1>
+                <p className="text-[var(--text-secondary)] text-xl mb-10 leading-relaxed">
+                  Experience real-time multiplayer gaming directly in your browser. No downloads, no registration required for guests.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link 
+                    href="/game/caro/new" 
+                    className="px-8 py-4 bg-[var(--accent-green)] text-white font-bold rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20"
+                  >
+                    <i className="fi fi-rr-play"></i> Play Now
+                  </Link>
+                  <div className="flex-1 max-w-md relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <i className="fi fi-rr-keyboard text-[var(--text-tertiary)]"></i>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      placeholder="Enter Room Code" 
+                      className="w-full pl-11 pr-24 py-4 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] uppercase font-mono"
+                      maxLength={6}
+                    />
+                    <button 
+                      onClick={handleJoinRoom}
+                      disabled={!roomCode.trim()}
+                      className="absolute right-2 top-2 bottom-2 px-4 bg-[var(--bg-secondary)] hover:bg-[var(--border-primary)] text-[var(--text-primary)] rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                      Join
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Decorative Background Icon */}
+              <div className="absolute -right-12 -bottom-12 opacity-5 pointer-events-none">
+                <i className="fi fi-rr-gamepad text-[400px]"></i>
               </div>
             </div>
 
-            {/* Features */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">{/* Features */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">⚡</div>
-                <h4 className="text-text-primary font-semibold mb-2">Instant Play</h4>
-                <p className="text-text-secondary text-sm">No registration required!</p>
+            {/* Games Grid */}
+            <div>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+                  <i className="fi fi-rr-apps text-[var(--accent-green)]"></i> Available Games
+                </h2>
               </div>
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">💬</div>
-                <h4 className="text-text-primary font-semibold mb-2">Real-Time Chat</h4>
-                <p className="text-text-secondary text-sm">Talk with opponents</p>
-              </div>
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">🏆</div>
-                <h4 className="text-text-primary font-semibold mb-2">Track Progress</h4>
-                <p className="text-text-secondary text-sm">Stats & achievements</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Caro Card */}
+                <Link href="/games/caro" className="group block">
+                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 hover:border-[var(--accent-green)] transition-all hover:translate-y-[-4px] relative overflow-hidden">
+                    <div className="absolute top-4 right-4 bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-xs font-bold border border-green-500/20">
+                      POPULAR
+                    </div>
+                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-green)] group-hover:bg-[var(--accent-green)] group-hover:text-white transition-colors">
+                      <i className="fi fi-rr-cross-circle text-3xl"></i>
+                    </div>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent-green)] transition-colors">Caro (Gomoku)</h3>
+                    <p className="text-[var(--text-secondary)] mb-6">Strategy board game. Get 5 in a row to win against your opponent.</p>
+                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~10m</span>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Battleship Card */}
+                <div className="group block opacity-75 cursor-not-allowed">
+                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden">
+                    <div className="absolute top-4 right-4 bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-primary)]">
+                      SOON
+                    </div>
+                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-orange)]">
+                      <i className="fi fi-rr-ship text-3xl"></i>
+                    </div>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Battleship</h3>
+                    <p className="text-[var(--text-secondary)] mb-6">Naval strategy game. Guess coordinates to sink the enemy fleet.</p>
+                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~15m</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chess Card */}
+                <div className="group block opacity-75 cursor-not-allowed">
+                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden">
+                    <div className="absolute top-4 right-4 bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-primary)]">
+                      SOON
+                    </div>
+                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-blue)]">
+                      <i className="fi fi-rr-chess-piece text-3xl"></i>
+                    </div>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Chess</h3>
+                    <p className="text-[var(--text-secondary)] mb-6">Classic strategy. Checkmate the opponent's king to win.</p>
+                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
+                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~20m</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">⚡</div>
-                <h4 className="text-primary font-semibold mb-2">Instant Play</h4>
-                <p className="text-secondary text-sm">No registration required!</p>
+
+            {/* Features Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-[var(--border-secondary)]">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[var(--bg-tertiary)] rounded-full flex items-center justify-center text-[var(--accent-green)] shrink-0">
+                  <i className="fi fi-rr-rocket-lunch"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--text-primary)] mb-1">Instant Access</h4>
+                  <p className="text-sm text-[var(--text-secondary)]">No downloads needed. Play directly in browser.</p>
+                </div>
               </div>
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">💬</div>
-                <h4 className="text-primary font-semibold mb-2">Real-Time Chat</h4>
-                <p className="text-secondary text-sm">Talk with opponents</p>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[var(--bg-tertiary)] rounded-full flex items-center justify-center text-[var(--accent-green)] shrink-0">
+                  <i className="fi fi-rr-comment-alt"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--text-primary)] mb-1">Live Chat</h4>
+                  <p className="text-sm text-[var(--text-secondary)]">Chat with friends while you play.</p>
+                </div>
               </div>
-              <div className="bg-secondary border border-border-secondary p-5 rounded-lg hover:bg-primary-light transition-all">
-                <div className="text-4xl mb-3">🏆</div>
-                <h4 className="text-primary font-semibold mb-2">Track Progress</h4>
-                <p className="text-secondary text-sm">Stats & achievements</p>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-[var(--bg-tertiary)] rounded-full flex items-center justify-center text-[var(--accent-green)] shrink-0">
+                  <i className="fi fi-rr-trophy"></i>
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--text-primary)] mb-1">Competitions</h4>
+                  <p className="text-sm text-[var(--text-secondary)]">Host tournaments with custom room codes.</p>
+                </div>
               </div>
             </div>
+
           </div>
         </main>
       </div>
