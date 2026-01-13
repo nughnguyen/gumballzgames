@@ -9,8 +9,8 @@ export default function Sidebar() {
   const { user, isGuest, logout } = useAuthStore();
 
   const navItems = [
-    { icon: '🎮', label: 'Play', href: '/' },
-    { icon: '⚙️', label: 'Settings', href: '/settings' },
+    { icon: 'fi fi-rr-gamepad', label: 'Play', href: '/' },
+    { icon: 'fi fi-rr-settings', label: 'Settings', href: '/settings' },
   ];
 
   const isActive = (href: string) => {
