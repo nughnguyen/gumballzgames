@@ -95,11 +95,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await supabase.auth.signOut();
+    if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
     set({ user: null, isGuest: false });
   },
 
   loginAsGuest: (nickname: string) => {
     const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Save to local storage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('guest_data', JSON.stringify({
+        id: guestId,
+        guestNickname: nickname
+      }));
+    }
+
     set({
       user: {
         id: guestId,
@@ -159,7 +169,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         loading: false,
       });
     } else {
-      set({ user: null, isGuest: false, loading: false });
+      // Check for guest data in local storage
+      const guestDataStr = typeof window !== 'undefined' ? localStorage.getItem('guest_data') : null;
+      if (guestDataStr) {
+        try {
+          const guestData = JSON.parse(guestDataStr);
+          set({
+            user: {
+              id: guestData.id,
+              isGuest: true,
+              guestNickname: guestData.guestNickname,
+            },
+            isGuest: true,
+            loading: false,
+          });
+        } catch (e) {
+          if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
+          set({ user: null, isGuest: false, loading: false });
+        }
+      } else {
+        set({ user: null, isGuest: false, loading: false });
+      }
     }
   },
 }));

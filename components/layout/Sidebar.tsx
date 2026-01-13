@@ -50,7 +50,7 @@ export default function Sidebar() {
                     : 'text-text-secondary hover:bg-primary-light hover:text-text-primary'
                 }`}
               >
-                <span className="text-2xl">{item.icon}</span>
+                <i className={`${item.icon} text-2xl`}></i>
                 <span className="font-semibold">{item.label}</span>
               </Link>
             );
