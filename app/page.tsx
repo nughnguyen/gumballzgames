@@ -128,25 +128,60 @@ export default function HomePage() {
                   >
                     <i className="fi fi-rr-play"></i> Play Now
                   </button>
-                  <div className="flex-1 max-w-md relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <i className="fi fi-rr-keyboard text-[var(--text-tertiary)]"></i>
+                  <div className="flex-1 max-w-md relative flex gap-2">
+                    {/* Game Selector */}
+                    <div className="relative z-20">
+                      <select
+                        onChange={(e) => {
+                           // Optional: visual handler, but logic is mainly in Join button
+                        }}
+                        className="h-full pl-3 pr-8 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] appearance-none outline-none focus:border-[var(--accent-green)] cursor-pointer"
+                        defaultValue="caro"
+                        id="gameSelect"
+                      >
+                        <option value="caro">🎯 Caro</option>
+                        <option value="battleship">⚓ Battleship</option>
+                      </select>
+                      <i className="fi fi-rr-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none"></i>
                     </div>
-                    <input 
-                      type="text" 
-                      value={roomCode}
-                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                      placeholder="Enter Room Code" 
-                      className="w-full pl-11 pr-24 py-4 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] uppercase font-mono"
-                      maxLength={6}
-                    />
-                    <button 
-                      onClick={handleJoinRoom}
-                      disabled={!roomCode.trim()}
-                      className="absolute right-2 top-2 bottom-2 px-4 bg-[var(--bg-secondary)] hover:bg-[var(--border-primary)] text-[var(--text-primary)] rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                      Join
-                    </button>
+
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i className="fi fi-rr-keyboard text-[var(--text-tertiary)]"></i>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={roomCode}
+                        onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                        placeholder="Enter Code" 
+                        className="w-full pl-11 pr-24 py-4 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] uppercase font-mono"
+                        maxLength={10}
+                      />
+                      <button 
+                        onClick={() => {
+                          if (!roomCode.trim()) return;
+                          
+                          // Smart Detection
+                          if (roomCode.startsWith('BS-')) {
+                              router.push(`/game/battleship/${roomCode}`);
+                          } else if (roomCode.startsWith('CR-')) {
+                              router.push(`/game/caro/${roomCode}`);
+                          } else {
+                              // Fallback to selected
+                              const selected = (document.getElementById('gameSelect') as HTMLSelectElement).value;
+                              if (selected === 'battleship') {
+                                router.push(`/game/battleship/${roomCode}`);
+                              } else {
+                                router.push(`/game/caro/${roomCode}`);
+                              }
+                          }
+                        }}
+                        disabled={!roomCode.trim()}
+                        className="absolute right-2 top-2 bottom-2 px-4 bg-[var(--bg-secondary)] hover:bg-[var(--border-primary)] text-[var(--text-primary)] rounded-lg font-medium transition-colors disabled:opacity-50"
+                      >
+                        Join
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

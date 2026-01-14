@@ -18,7 +18,7 @@ export default function CaroPage() {
         alert("Please login first or set a guest nickname on the home page.");
         return;
     }
-    const roomCode = generateRoomCode();
+    const roomCode = 'CR-' + generateRoomCode();
     router.push(`/game/caro/${roomCode}`);
   };
 
@@ -56,7 +56,7 @@ export default function CaroPage() {
                  // If my ID > opponent ID, I initiate the match.
                  // Otherwise I wait for them.
                  if (myId > opponent.user_id) {
-                     const roomCode = generateRoomCode();
+                     const roomCode = 'CR-' + generateRoomCode();
                      
                      // Broadcast to opponent
                      channel.send({

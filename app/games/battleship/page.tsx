@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import BattleshipGame from '@/components/games/Battleship/BattleshipGame';
@@ -14,69 +14,79 @@ export default function BattleshipPage() {
   const [mode, setMode] = useState<'menu' | 'local'>('menu');
   const [isSearching, setIsSearching] = useState(false);
 
+  // Cleanup matchmaking channel on unmount or when search stops
+  useEffect(() => {
+    let channel: any = null;
+
+    if (isSearching) {
+      const myId = user?.id || `guest-${Date.now()}`;
+      const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
+
+      channel = supabase.channel('matchmaking:battleship', {
+        config: {
+          presence: {
+            key: myId,
+          }
+        }
+      });
+
+      channel
+        .on('presence', { event: 'sync' }, async () => {
+          const state = channel.presenceState();
+          const others = Object.values(state).flat().filter((u:any) => u.user_id !== myId);
+          
+          if (others.length > 0) {
+            const opponent = others[0] as any;
+            
+            // Deterministic tie-breaker
+            if (myId > opponent.user_id) {
+              const roomId = 'BS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+              
+              // Broadcast to opponent
+              await channel.send({
+                type: 'broadcast',
+                event: 'match_found',
+                payload: { target_id: opponent.user_id, roomId }
+              });
+              
+              router.push(`/game/battleship/${roomId}`);
+            }
+          }
+        })
+        .on('broadcast', { event: 'match_found' }, ({ payload }) => {
+          if (payload.target_id === myId) {
+            router.push(`/game/battleship/${payload.roomId}`);
+          }
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track({
+              user_id: myId,
+              nickname: myNickname,
+              joined_at: new Date().toISOString()
+            });
+          }
+        });
+    }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [isSearching, user, isGuest, router]);
+
   const handleCreateRoom = () => {
-    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const roomId = 'BS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     router.push(`/game/battleship/${roomId}`);
   };
 
-  const handleQuickMatch = async () => {
-     if (!user && !isGuest) {
-         alert("Please login first or set a guest nickname.");
-         return;
-     }
-     
-     if (isSearching) return; // Prevent double click
-     setIsSearching(true);
-     
-     const myId = user?.id || `guest-${Date.now()}`;
-     const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
-     
-     const channel = supabase.channel('matchmaking:battleship', {
-        config: {
-            presence: {
-                key: myId,
-            }
-        }
-     });
-
-     channel
-        .on('presence', { event: 'sync' }, () => {
-             const state = channel.presenceState();
-             const others = Object.values(state).flat().filter((u:any) => u.user_id !== myId);
-             
-             if (others.length > 0) {
-                 const opponent = others[0] as any;
-                 
-                 // Deterministic tie-breaker
-                 if (myId > opponent.user_id) {
-                     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                     
-                     // Broadcast to opponent
-                     channel.send({
-                         type: 'broadcast',
-                         event: 'match_found',
-                         payload: { target_id: opponent.user_id, roomId }
-                     });
-                     
-                     // Go myself
-                     router.push(`/game/battleship/${roomId}`);
-                 }
-             }
-        })
-        .on('broadcast', { event: 'match_found' }, ({ payload }) => {
-             if (payload.target_id === myId) {
-                  router.push(`/game/battleship/${payload.roomId}`);
-             }
-        })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                await channel.track({
-                    user_id: myId,
-                    nickname: myNickname,
-                    joined_at: new Date().toISOString()
-                });
-            }
-        });
+  const handleQuickMatch = () => {
+    if (!user && !isGuest) {
+      alert("Please login first or set a guest nickname.");
+      return;
+    }
+    setIsSearching(true);
   };
 
   if (mode === 'local') {
