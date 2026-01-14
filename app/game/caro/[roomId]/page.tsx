@@ -22,7 +22,7 @@ export default function CaroGamePage() {
   const params = useParams();
   const router = useRouter();
   const roomCode = params.roomId as string;
-  const { user, isGuest } = useAuthStore();
+  const { user, isGuest, checkAuth, loading: authLoading } = useAuthStore();
   
   // Game State
   const [moves, setMoves] = useState<CaroMove[]>([]);
@@ -44,6 +44,11 @@ export default function CaroGamePage() {
   const hasSyncedRef = useRef(false);
 
   const currentPlayer = getCurrentPlayer(moves);
+
+  // Initialize Auth
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // Helper to determine role based on join order
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function CaroGamePage() {
 
   // Main Room Logic (Presence + Broadcast)
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to initialize
     if ((!user && !isGuest) || !roomCode) return;
 
     // Stable ID for the session
@@ -628,21 +634,59 @@ export default function CaroGamePage() {
         <div className="flex-1 flex flex-col h-full relative overflow-hidden">
             {/* Header */}
             <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
-              <div>
-                <div className="flex items-center gap-2">
-                   <h1 className="text-xl font-bold text-[var(--text-primary)]">Caro</h1>
-                   <span className="text-xs px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono">{roomCode}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm mt-1">
-                  <span className={`flex items-center gap-1 ${currentPlayer === mySymbol ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]'}`}>
-                    {currentPlayer === mySymbol ? 'Your Turn' : "Opponent's Turn"}
-                  </span>
-                  <span className="text-[var(--border-primary)]">|</span>
-                   <span className="text-[var(--text-tertiary)]">
-                     Vs: {opponentName}
+               <div>
+                 <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-[var(--text-primary)]">Caro</h1>
+                    
+                    {/* Copy Link Button */}
+                    <button 
+                       onClick={() => {
+                           navigator.clipboard.writeText(window.location.href);
+                           setChatMessages(prev => [...prev, {
+                               id: Date.now().toString(),
+                               senderId: 'system',
+                               senderName: 'System',
+                               content: 'Room link copied to clipboard.',
+                               timestamp: Date.now(),
+                               isSystem: true
+                           }]);
+                       }}
+                       title="Copy Room Link"
+                       className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-1 transition-all"
+                    >
+                       <i className="fi fi-rr-link-alt"></i>
+                    </button>
+
+                    {/* Copy ID Button */}
+                    <button 
+                       onClick={() => {
+                           navigator.clipboard.writeText(roomCode);
+                           setChatMessages(prev => [...prev, {
+                               id: Date.now().toString(),
+                               senderId: 'system',
+                               senderName: 'System',
+                               content: 'Room ID copied to clipboard.',
+                               timestamp: Date.now(),
+                               isSystem: true
+                           }]);
+                       }}
+                       title="Copy Room ID"
+                       className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-2 transition-all"
+                    >
+                       <span>ID: {roomCode}</span>
+                       <i className="fi fi-rr-copy"></i>
+                    </button>
+                 </div>
+                 <div className="flex items-center gap-2 text-sm mt-1">
+                   <span className={`flex items-center gap-1 ${currentPlayer === mySymbol ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]'}`}>
+                     {currentPlayer === mySymbol ? 'Your Turn' : "Opponent's Turn"}
                    </span>
-                </div>
-              </div>
+                   <span className="text-[var(--border-primary)]">|</span>
+                    <span className="text-[var(--text-tertiary)]">
+                      Vs: {opponentName}
+                    </span>
+                 </div>
+               </div>
               
               <div className="flex items-center gap-2">
                 <button onClick={handleExit} className="p-2 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">

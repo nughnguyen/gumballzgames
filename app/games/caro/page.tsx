@@ -14,6 +14,10 @@ export default function CaroPage() {
   const { user, isGuest } = useAuthStore();
 
   const handleCreateRoom = () => {
+    if (!user && !isGuest) {
+        alert("Please login first or set a guest nickname on the home page.");
+        return;
+    }
     const roomCode = generateRoomCode();
     router.push(`/game/caro/${roomCode}`);
   };

@@ -25,7 +25,7 @@ export default function BattleshipMultiplayerPage() {
   const params = useParams();
   const router = useRouter();
   const roomId = params.roomId as string;
-  const { user, isGuest } = useAuthStore();
+  const { user, isGuest, checkAuth, loading: authLoading } = useAuthStore();
   
   // -- Game State --
   const [phase, setPhase] = useState<GamePhase>('waiting');
@@ -60,6 +60,11 @@ export default function BattleshipMultiplayerPage() {
     myRoleRef.current = myRole;
   }, [myGrid, myRole]);
 
+  // Auth Init
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   const addLog = (msg: string) => {
     setLogs(prev => [msg, ...prev].slice(0, 5));
   };
@@ -68,6 +73,7 @@ export default function BattleshipMultiplayerPage() {
 
   // --- SUPABASE CONNECTION ---
   useEffect(() => {
+    if (authLoading) return;
     if ((!user && !isGuest) || !roomId) return;
 
     const myPresenceId = user?.id || `guest-${Date.now()}`;
@@ -135,7 +141,7 @@ export default function BattleshipMultiplayerPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, user, isGuest]);
+  }, [roomId, user, isGuest, authLoading]);
 
   // --- GAME ACTIONS ---
 
@@ -363,8 +369,27 @@ export default function BattleshipMultiplayerPage() {
                <div>
                   <div className="flex items-center gap-2">
                      <h1 className="text-xl font-bold">Battleship</h1>
-                     <button onClick={handleCopyCode} className="text-xs px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono hover:bg-[var(--border-primary)] flex items-center gap-1">
-                        {roomId} <i className="fi fi-rr-copy"></i>
+                     
+                     {/* Copy Link Button */}
+                     <button 
+                        onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            addLog("Room link copied!");
+                        }} 
+                        title="Copy Room Link"
+                        className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-1 transition-all"
+                     >
+                        <i className="fi fi-rr-link-alt"></i>
+                     </button>
+
+                     {/* Copy ID Button */}
+                     <button 
+                        onClick={handleCopyCode} 
+                        title="Copy Room ID"
+                        className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-2 transition-all"
+                     >
+                        <span>ID: {roomId}</span>
+                        <i className="fi fi-rr-copy"></i>
                      </button>
                   </div>
                   <div className="flex items-center gap-2 text-sm mt-1">
