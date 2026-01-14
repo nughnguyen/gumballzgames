@@ -182,20 +182,41 @@ export async function deleteExpiredRooms(): Promise<void> {
 /**
  * Leave a room
  */
-export async function leaveRoom(roomId: string, userId?: string): Promise<boolean> {
-  const query = supabase
-    .from('room_participants')
-    .delete()
-    .eq('room_id', roomId);
+/**
+ * Save game history (stat, score) without persistent room/state
+ */
+export async function saveGameHistory(
+  gameType: 'caro' | 'battleship' | 'chess',
+  player1: { id?: string; nickname?: string },
+  player2: { id?: string; nickname?: string },
+  winner: { id?: string; nickname?: string } | 'draw',
+  movesCount: number,
+  durationSeconds: number
+): Promise<boolean> {
+  const historyData: any = {
+    game_type: gameType,
+    moves_count: movesCount,
+    duration_seconds: durationSeconds,
+    player1_nickname: player1.nickname,
+    player2_nickname: player2.nickname,
+  };
 
-  if (userId) {
-    query.eq('user_id', userId);
+  if (player1.id) historyData.player1_id = player1.id;
+  if (player2.id) historyData.player2_id = player2.id;
+  
+  if (winner === 'draw') {
+    // No winner_id/nickname set
+  } else if (winner) {
+    if (winner.id) historyData.winner_id = winner.id;
+    if (winner.nickname) historyData.winner_nickname = winner.nickname;
   }
 
-  const { error } = await query;
+  const { error } = await supabase
+    .from('game_history')
+    .insert(historyData);
 
   if (error) {
-    console.error('Error leaving room:', error);
+    console.error('Error saving game history:', error);
     return false;
   }
 

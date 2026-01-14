@@ -35,6 +35,7 @@ export default function CaroGamePage() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mySymbol, setMySymbol] = useState<'X' | 'O' | null>(null);
+  const [rematchRequests, setRematchRequests] = useState<('X' | 'O')[]>([]);
   
   // Chat State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -194,13 +195,23 @@ export default function CaroGamePage() {
         'broadcast',
         { event: 'game_update' },
         (payload) => {
-          const { moves: newMoves, winner: newWinner, gameStatus: newStatus } = payload.payload as any;
+          const { moves: newMoves, winner: newWinner, gameStatus: newStatus, rematchRequests: newRequests } = payload.payload as any;
           if (newMoves) setMoves(newMoves);
+          
+          if (newMoves && newMoves.length === 0) {
+             // Game reset
+             setWinner(null);
+             setGameStatus('playing');
+             setShowEndModal(false);
+             setRematchRequests([]);
+          }
+
           if (newWinner) {
              setWinner(newWinner);
              setShowEndModal(true);
           }
           if (newStatus) setGameStatus(newStatus);
+          if (newRequests) setRematchRequests(newRequests);
         }
       )
       .subscribe();
@@ -305,9 +316,67 @@ export default function CaroGamePage() {
     await updateRoomStatus(room.id, 'finished');
   };
 
-  const handleRematch = () => {
-    // TODO: Implement rematch logic
-    handleSendMessage("I want a rematch! (Coming soon)");
+  const handleRematch = async () => {
+    if (!room || !mySymbol) return;
+    
+    // Prevent duplicate requests
+    if (rematchRequests.includes(mySymbol)) return;
+
+    const newRequests = [...rematchRequests, mySymbol];
+    setRematchRequests(newRequests);
+
+    // Check if we have 2 requests now
+    if (newRequests.length >= 2) {
+       // Both accepted -> Reset Game
+       const resetState = {
+         moves: [],
+         winner: null,
+         gameStatus: 'playing',
+         rematchRequests: [],
+       };
+       
+       // Update Local
+       setMoves([]);
+       setWinner(null);
+       setGameStatus('playing');
+       setShowEndModal(false);
+       setRematchRequests([]);
+       
+       // Notify
+       handleSendMessage("Both players agreed to rematch. Game restarted!");
+
+       // Broadcast Reset
+       await supabase.channel(`room:${room.id}`).send({
+        type: 'broadcast',
+        event: 'game_update',
+        payload: resetState
+       });
+       
+       // Sync DB
+       await updateGameState(room.id, resetState);
+       await updateRoomStatus(room.id, 'playing');
+
+    } else {
+       // Just one request so far
+       handleSendMessage("I want a rematch!");
+       
+       const updateState = {
+           moves,
+           winner,
+           gameStatus,
+           rematchRequests: newRequests
+       };
+
+       // Broadcast Request
+       await supabase.channel(`room:${room.id}`).send({
+        type: 'broadcast',
+        event: 'game_update',
+        payload: { rematchRequests: newRequests }
+       });
+       
+       // Sync DB
+       await updateGameState(room.id, updateState);
+    }
   };
 
   const handleExit = async () => {
@@ -443,12 +512,32 @@ export default function CaroGamePage() {
                 </p>
             </div>
             
+            {/* Rematch Status Indicators */}
+            {opponentName !== 'Waiting...' && (
+                 <div className="mb-4 space-y-2">
+                    {rematchRequests.some(r => r !== mySymbol) && !rematchRequests.includes(mySymbol!) && (
+                         <div className="p-3 bg-[var(--bg-tertiary)] rounded-lg text-sm text-[var(--text-primary)] animate-pulse border border-[var(--accent-green)]/30">
+                            <span className="font-bold text-[var(--accent-green)]">Opponent</span> wants a rematch!
+                         </div>
+                    )}
+                 </div>
+            )}
+            
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleRematch}
-                className="w-full px-6 py-3 bg-[var(--accent-green)] hover:brightness-110 text-white font-bold rounded-xl transition-all shadow-lg"
+                disabled={rematchRequests.includes(mySymbol!)}
+                className={`w-full px-6 py-3 font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2
+                    ${rematchRequests.includes(mySymbol!)
+                        ? 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] cursor-not-allowed opacity-70' 
+                        : 'bg-[var(--accent-green)] hover:brightness-110 text-white'}`}
               >
-                Rematch Request
+                {rematchRequests.includes(mySymbol!)
+                    ? <><i className="fi fi-rr-spinner animate-spin"></i> Waiting for Opponent...</>
+                    : rematchRequests.some(r => r !== mySymbol)
+                        ? 'Accept Rematch' 
+                        : 'Rematch Request'
+                }
               </button>
               <button
                 onClick={handleExit}
