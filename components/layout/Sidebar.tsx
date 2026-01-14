@@ -184,9 +184,9 @@ export default function Sidebar() {
                   {(user?.profile?.display_name || user?.guestNickname || 'G')[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[var(--text-primary)] font-semibold truncate text-sm">
+                  <Link href="/profile" className="text-[var(--text-primary)] font-semibold truncate text-sm hover:text-[var(--accent-green)] transition-colors">
                     {user?.profile?.display_name || user?.guestNickname}
-                  </p>
+                  </Link>
                   <p className="text-xs text-[var(--text-tertiary)]">{isGuest ? '👤 Guest' : '✓ Member'}</p>
                 </div>
               </div>
