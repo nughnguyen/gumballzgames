@@ -32,11 +32,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (data.user) {
       // Fetch profile
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
+      
+      // Fallback: If profile missing (trigger failed previously)
+      if (!profile) {
+          const newProfile = {
+              id: data.user.id,
+              username: `user_${data.user.id.slice(0, 8)}`,
+              display_name: `User ${data.user.id.slice(0, 8)}`,
+          };
+          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          if (!insertError) profile = newProfile as Profile;
+      }
 
       set({
         user: {
@@ -64,17 +75,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (error) throw error;
 
     if (data.user) {
-      // Profile is created automatically by database trigger (handle_new_user)
+      // Profile generation strategy:
+      // 1. Try to fetch existing profile (created by DB trigger)
+      // 2. If missing and we have a session, create it manually (fallback)
       
-      // Wait a moment for trigger to complete
+      // Wait a moment for trigger
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Fetch the created profile
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
+
+      // Fallback: Create profile if missing and we have a session (Email Sync off or similar)
+      if (!profile && data.session) {
+          const newProfile = {
+              id: data.user.id,
+              username: username || `user_${data.user.id.slice(0, 8)}`,
+              display_name: username || `User ${data.user.id.slice(0, 8)}`,
+          };
+          
+          const { error: insertError } = await supabase
+              .from('profiles')
+              .insert(newProfile);
+              
+          if (!insertError) {
+              profile = newProfile as Profile;
+          }
+      }
 
       set({
         user: {
