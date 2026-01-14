@@ -190,6 +190,19 @@ export default function CaroGamePage() {
           setChatMessages(prev => [...prev, payload.payload as ChatMessage]);
         }
       )
+      .on(
+        'broadcast',
+        { event: 'game_update' },
+        (payload) => {
+          const { moves: newMoves, winner: newWinner, gameStatus: newStatus } = payload.payload as any;
+          if (newMoves) setMoves(newMoves);
+          if (newWinner) {
+             setWinner(newWinner);
+             setShowEndModal(true);
+          }
+          if (newStatus) setGameStatus(newStatus);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -250,7 +263,18 @@ export default function CaroGamePage() {
       await updateRoomStatus(room.id, 'finished');
     }
 
-    // Update game state in database
+    // Broadcast update immediately via WebSocket for low latency
+    await supabase.channel(`room:${room.id}`).send({
+      type: 'broadcast',
+      event: 'game_update',
+      payload: {
+        moves: newMoves,
+        winner: winResult.winner,
+        gameStatus: winResult.winner ? 'finished' : gameStatus
+      }
+    });
+
+    // Save to Database for persistence
     await updateGameState(room.id, gameData);
   }, [gameStatus, room, currentPlayer, mySymbol, moves]);
 
@@ -261,6 +285,17 @@ export default function CaroGamePage() {
     setWinner(surrenderWinner);
     setGameStatus('finished');
     setShowEndModal(true);
+
+    // Broadcast surrender
+    await supabase.channel(`room:${room.id}`).send({
+      type: 'broadcast',
+      event: 'game_update',
+      payload: {
+        winner: surrenderWinner,
+        gameStatus: 'finished',
+        moves: moves
+      }
+    });
 
     await updateGameState(room.id, {
       moves,
