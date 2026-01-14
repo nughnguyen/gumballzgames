@@ -1,3 +1,4 @@
+// Register Page
 'use client';
 
 import { useState } from 'react';
@@ -47,95 +48,119 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-purple-900 to-secondary-900">
-      <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">Create Account</h1>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1614726365723-49faaa5f2660?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center">
+       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+       <div className="relative z-10 w-full max-w-md p-8">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-tr from-green-400 to-blue-500 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
+               <i className="fi fi-rr-user-add text-3xl text-white"></i>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
+            <p className="text-gray-300">Join the community today</p>
+          </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-200 mb-2">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
-              placeholder="coolplayer123"
-            />
+          {/* Username */}
+          <div className="relative">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <i className="fi fi-rr-at"></i>
+             </div>
+             <input
+               type="text"
+               value={username}
+               onChange={(e) => setUsername(e.target.value)}
+               required
+               className="w-full pl-11 pr-4 py-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all font-medium"
+               placeholder="Username"
+             />
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
-              placeholder="you@example.com"
-            />
+          {/* Email */}
+          <div className="relative">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <i className="fi fi-rr-envelope"></i>
+             </div>
+             <input
+               type="email"
+               value={email}
+               onChange={(e) => setEmail(e.target.value)}
+               required
+               className="w-full pl-11 pr-4 py-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all font-medium"
+               placeholder="Email Address"
+             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
-              placeholder="••••••••"
-            />
+          {/* Password */}
+          <div className="relative">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <i className="fi fi-rr-lock"></i>
+             </div>
+             <input
+               type="password"
+               value={password}
+               onChange={(e) => setPassword(e.target.value)}
+               required
+               className="w-full pl-11 pr-4 py-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all font-medium"
+               placeholder="Password"
+             />
           </div>
 
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200 mb-2">
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
-              placeholder="••••••••"
-            />
+          {/* Confirm Password */}
+          <div className="relative">
+             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                <i className="fi fi-rr-check-circle"></i>
+             </div>
+             <input
+               type="password"
+               value={confirmPassword}
+               onChange={(e) => setConfirmPassword(e.target.value)}
+               required
+               className="w-full pl-11 pr-4 py-4 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all font-medium"
+               placeholder="Confirm Password"
+             />
           </div>
 
           {error && (
-            <div className="bg-error/20 border border-error text-white px-4 py-2 rounded-lg text-sm">
-              {error}
+            <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl text-sm flex items-center gap-2 animate-in slide-in-from-top-2">
+                <i className="fi fi-rr-exclamation"></i>
+               {error}
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
           >
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? (
+                 <i className="fi fi-rr-spinner animate-spin"></i>
+            ) : (
+                 <i className="fi fi-rr-user-add"></i>
+            )}
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-300">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-primary-300 hover:text-primary-200 font-semibold">
-              Login
+        <div className="mt-8 flex flex-col gap-4 text-center">
+            <Link href="/auth/login" className="text-white/80 hover:text-white transition-colors text-sm">
+                Already have an account? <span className="font-bold text-green-400 hover:underline">Log In</span>
             </Link>
-          </p>
+             <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                   <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                   <span className="px-2 bg-transparent text-gray-400 bg-[#1a1f3c]/0 backdrop-blur-3xl rounded">or</span>
+                </div>
+             </div>
+             <Link href="/" className="text-sm font-medium text-blue-300 hover:text-blue-200 transition-colors flex items-center justify-center gap-2 group">
+                Continue as Guest <i className="fi fi-rr-arrow-right group-hover:translate-x-1 transition-transform"></i>
+             </Link>
         </div>
       </div>
+     </div>
     </div>
   );
 }
