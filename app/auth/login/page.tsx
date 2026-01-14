@@ -77,9 +77,27 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl text-sm flex items-center gap-2 animate-in slide-in-from-top-2">
-                <i className="fi fi-rr-exclamation"></i>
-                {error}
+              <div className="flex flex-col gap-2">
+                <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl text-sm flex items-center gap-2 animate-in slide-in-from-top-2">
+                  <i className="fi fi-rr-exclamation"></i>
+                  {error}
+                </div>
+                {error.includes('Email not confirmed') && (
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await useAuthStore.getState().resendVerification(email);
+                                alert("Verification email sent! Please check your inbox.");
+                            } catch (e: any) {
+                                alert(e.message);
+                            }
+                        }}
+                        className="text-sm text-green-400 hover:text-green-300 underline text-center"
+                    >
+                        Resend Verification Email
+                    </button>
+                )}
               </div>
             )}
 

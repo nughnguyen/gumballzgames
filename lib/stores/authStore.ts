@@ -13,6 +13,7 @@ interface AuthState {
   logout: () => Promise<void>;
   loginAsGuest: (nickname: string) => void;
   renameGuest: (newNickname: string) => void;
+  resendVerification: (email: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -177,6 +178,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         guestNickname: newNickname,
       }
     });
+  },
+
+  resendVerification: async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    });
+    if (error) throw error;
   },
 
   updateProfile: async (updates: Partial<Profile>) => {
