@@ -72,6 +72,13 @@ export default function CaroGamePage() {
     // Let's store "my presence ID" in a ref or state to be sure.
   }, [onlineUsers, user]);
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user && !isGuest) {
+      router.push('/');
+    }
+  }, [authLoading, user, isGuest, router]);
+
   // Main Room Logic (Presence + Broadcast)
   useEffect(() => {
     if (authLoading) return; // Wait for auth to initialize
@@ -221,7 +228,7 @@ export default function CaroGamePage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomCode, user, isGuest]); 
+  }, [roomCode, user, isGuest, authLoading]); 
   // Intentional: we want this effect to run once when user/room ready. 
   // It handles its own internal state via closures/state updates. 
   // However, closures for 'moves' inside callbacks will be stale.

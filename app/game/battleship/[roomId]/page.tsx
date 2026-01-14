@@ -60,6 +60,13 @@ export default function BattleshipMultiplayerPage() {
     myRoleRef.current = myRole;
   }, [myGrid, myRole]);
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user && !isGuest) {
+      router.push('/');
+    }
+  }, [authLoading, user, isGuest, router]);
+
   // Auth Init
   useEffect(() => {
     checkAuth();
