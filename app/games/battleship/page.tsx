@@ -53,7 +53,7 @@ export default function BattleshipPage() {
             }
           }
         })
-        .on('broadcast', { event: 'match_found' }, ({ payload }) => {
+        .on('broadcast', { event: 'match_found' }, ({ payload }: { payload: { target_id: string; roomId: string } }) => {
           if (payload.target_id === myId) {
             router.push(`/game/battleship/${payload.roomId}`);
           }
