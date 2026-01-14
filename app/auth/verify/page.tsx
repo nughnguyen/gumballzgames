@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 
-export default function VerifyPage() {
+// Main content component that uses useSearchParams
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
@@ -98,5 +99,26 @@ export default function VerifyPage() {
       </div>
      </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function VerifyLoading() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1614726365723-49faaa5f2660?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center">
+       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+       <div className="relative z-10">
+          <i className="fi fi-rr-spinner animate-spin text-4xl text-white"></i>
+       </div>
+    </div>
+  );
+}
+
+// Main page component wrapped in Suspense
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<VerifyLoading />}>
+      <VerifyContent />
+    </Suspense>
   );
 }

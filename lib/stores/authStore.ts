@@ -12,9 +12,6 @@ interface AuthState {
   register: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   loginAsGuest: (nickname: string) => void;
-  renameGuest: (newNickname: string) => void;
-  resendVerification: (email: string) => Promise<void>;
-  verifyOtp: (email: string, token: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -34,23 +31,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (data.user) {
       // Fetch profile
-      let { data: profile } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
-      
-      // Fallback: If profile missing (trigger failed previously)
-      if (!profile) {
-          const newProfile = {
-              id: data.user.id,
-              username: `user_${data.user.id.slice(0, 8)}`,
-              display_name: `User ${data.user.id.slice(0, 8)}`,
-          };
-          const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
-          if (insertError) console.error("AuthStore Login Fallback Error:", insertError);
-          if (!insertError) profile = newProfile as Profile;
-      }
 
       set({
         user: {
@@ -65,18 +50,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (email: string, password: string, username: string) => {
-    // 1. Check if username exists (to avoid DB trigger crash on unique constraint)
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .single();
-
-    if (existingUser) {
-      throw new Error('Username is already taken');
-    }
-
-    // 2. Register with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -90,37 +63,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (error) throw error;
 
     if (data.user) {
-      // Profile generation strategy:
-      // 1. Try to fetch existing profile (created by DB trigger)
-      // 2. If missing and we have a session, create it manually (fallback)
+      // Profile is created automatically by database trigger (handle_new_user)
       
-      // Wait a moment for trigger
+      // Wait a moment for trigger to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      let { data: profile } = await supabase
+      // Fetch the created profile
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
-
-      // Fallback: Create profile if missing and we have a session (Email Sync off or similar)
-      if (!profile && data.session) {
-          const newProfile = {
-              id: data.user.id,
-              username: username || `user_${data.user.id.slice(0, 8)}`,
-              display_name: username || `User ${data.user.id.slice(0, 8)}`,
-          };
-          
-          const { error: insertError } = await supabase
-              .from('profiles')
-              .upsert(newProfile);
-
-          if (insertError) console.error("AuthStore Register Fallback Error:", insertError);
-              
-          if (!insertError) {
-              profile = newProfile as Profile;
-          }
-      }
 
       set({
         user: {
@@ -159,74 +112,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       },
       isGuest: true,
     });
-  },
-
-  renameGuest: (newNickname: string) => {
-    const { user } = get();
-    if (!user || !user.isGuest) return;
-
-    // Update local storage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('guest_data', JSON.stringify({
-        id: user.id,
-        guestNickname: newNickname
-      }));
-    }
-
-    set({
-      user: {
-        ...user,
-        guestNickname: newNickname,
-      }
-    });
-  },
-
-  resendVerification: async (email: string) => {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: email,
-    });
-    if (error) throw error;
-  },
-
-  verifyOtp: async (email: string, token: string) => {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'signup',
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-         // Same profile logic as login/register to be safe
-         let { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-         
-         if (!profile) {
-              const username = data.user.user_metadata?.username;
-              const newProfile = {
-                  id: data.user.id,
-                  username: username || `user_${data.user.id.slice(0, 8)}`,
-                  display_name: username || `User ${data.user.id.slice(0, 8)}`,
-              };
-              const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
-              if (!insertError) profile = newProfile as Profile;
-         }
-
-         set({
-            user: {
-                id: data.user.id,
-                email: data.user.email,
-                profile: profile || undefined,
-                isGuest: false,
-            },
-            isGuest: false,
-         });
-    }
   },
 
   updateProfile: async (updates: Partial<Profile>) => {
