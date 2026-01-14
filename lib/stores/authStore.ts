@@ -24,160 +24,180 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: true,
   isGuest: false,
 
+  /**
+   * Login with Email and Password
+   */
   login: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-      // Fetch profile
-      let { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-      
-      // Fallback: If profile missing (trigger failed previously)
-      if (!profile) {
-          const newProfile = {
-              id: data.user.id,
-              username: `user_${data.user.id.slice(0, 8)}`,
-              display_name: `User ${data.user.id.slice(0, 8)}`,
-          };
-          const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
-          if (insertError) console.error("AuthStore Login Fallback Error:", insertError);
-          if (!insertError) profile = newProfile as Profile;
-      }
-
-      set({
-        user: {
-          id: data.user.id,
-          email: data.user.email,
-          profile: profile || undefined,
-          isGuest: false,
-        },
-        isGuest: false,
+    set({ loading: true });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Clear any guest data
+        if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
+
+        // Fetch profile
+        let { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        // Resilience: If profile is missing (rare trigger failure), create it on the fly
+        if (!profile) {
+            console.warn("Profile missing for user, attempting recreation...");
+            const newProfile = {
+                id: data.user.id,
+                username: `user_${data.user.id.slice(0, 8)}`,
+                display_name: `User ${data.user.id.slice(0, 8)}`,
+            };
+            const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
+            if (!insertError) profile = newProfile as Profile;
+        }
+
+        set({
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            profile: profile || undefined,
+            isGuest: false,
+          },
+          isGuest: false,
+          loading: false,
+        });
+      }
+    } catch (error) {
+      set({ loading: false });
+      throw error;
     }
   },
 
+  /**
+   * Register Logic
+   */
   register: async (email: string, password: string, username: string) => {
-    // 1. Check if username exists (to avoid DB trigger crash on unique constraint)
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .single();
-
-    if (existingUser) {
-      throw new Error('Username is already taken');
-    }
-
-    // 2. Register with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-        },
-      },
-    });
-
-    if (error) throw error;
-
-    if (data.user) {
-      // Profile generation strategy:
-      // 1. Try to fetch existing profile (created by DB trigger)
-      // 2. If missing and we have a session, create it manually (fallback)
-      
-      // Wait a moment for trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      let { data: profile } = await supabase
+    set({ loading: true });
+    try {
+      // 1. Pre-check username availability
+      const { data: existingUser } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
+        .select('username')
+        .eq('username', username)
         .single();
 
-      // Fallback: Create profile if missing and we have a session (Email Sync off or similar)
-      if (!profile && data.session) {
-          const newProfile = {
-              id: data.user.id,
-              username: username || `user_${data.user.id.slice(0, 8)}`,
-              display_name: username || `User ${data.user.id.slice(0, 8)}`,
-          };
-          
-          const { error: insertError } = await supabase
-              .from('profiles')
-              .upsert(newProfile);
-
-          if (insertError) console.error("AuthStore Register Fallback Error:", insertError);
-              
-          if (!insertError) {
-              profile = newProfile as Profile;
-          }
+      if (existingUser) {
+        throw new Error('Username is already taken');
       }
 
-      set({
-        user: {
-          id: data.user.id,
-          email: data.user.email,
-          profile: profile || undefined,
-          isGuest: false,
+      // 2. Sign up
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: username, // Map username to full_name for trigger
+          },
         },
-        isGuest: false,
       });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Wait briefly for DB trigger to create profile
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        let { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        // Fallback profile creation
+        if (!profile && data.session) {
+            const newProfile = {
+                id: data.user.id,
+                username: username || `user_${data.user.id.slice(0, 8)}`,
+                display_name: username,
+            };
+            await supabase.from('profiles').upsert(newProfile);
+            profile = newProfile as Profile;
+        }
+
+        set({
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            profile: profile || undefined,
+            isGuest: false,
+          },
+          isGuest: false,
+          loading: false,
+        });
+      }
+    } catch (error) {
+      set({ loading: false });
+      throw error;
     }
   },
 
+  /**
+   * Logout Logic
+   */
   logout: async () => {
+    set({ loading: true });
     await supabase.auth.signOut();
     if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
-    set({ user: null, isGuest: false });
+    set({ user: null, isGuest: false, loading: false });
   },
 
+  /**
+   * Guest Mode Logic
+   */
   loginAsGuest: (nickname: string) => {
     const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Save to local storage
+    const guestUser = {
+      id: guestId,
+      isGuest: true,
+      guestNickname: nickname,
+    };
+
     if (typeof window !== 'undefined') {
-      localStorage.setItem('guest_data', JSON.stringify({
-        id: guestId,
-        guestNickname: nickname
-      }));
+      localStorage.setItem('guest_data', JSON.stringify(guestUser));
     }
 
     set({
-      user: {
-        id: guestId,
-        isGuest: true,
-        guestNickname: nickname,
-      },
+      user: guestUser,
       isGuest: true,
+      loading: false
     });
   },
 
+  /**
+   * Rename Guest
+   */
   renameGuest: (newNickname: string) => {
     const { user } = get();
-    if (!user || user.isGuest === false) return; // Should allow if user IS guest (isGuest: true)
+    if (!user || !user.isGuest) return;
 
-    // Update local storage
+    const updatedUser = {
+      ...user,
+      guestNickname: newNickname,
+    };
+
     if (typeof window !== 'undefined') {
-      localStorage.setItem('guest_data', JSON.stringify({
-        id: user.id,
-        guestNickname: newNickname
-      }));
+      localStorage.setItem('guest_data', JSON.stringify(updatedUser));
     }
 
     set({
-      user: {
-        ...user,
-        guestNickname: newNickname,
-      }
+      user: updatedUser,
+      isGuest: true,
     });
   },
 
@@ -199,7 +219,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (error) throw error;
 
     if (data.user) {
-         // Same profile logic as login/register to be safe
          let { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -211,10 +230,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               const newProfile = {
                   id: data.user.id,
                   username: username || `user_${data.user.id.slice(0, 8)}`,
-                  display_name: username || `User ${data.user.id.slice(0, 8)}`,
+                  display_name: username,
               };
-              const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
-              if (!insertError) profile = newProfile as Profile;
+              await supabase.from('profiles').upsert(newProfile);
+              profile = newProfile as Profile;
          }
 
          set({
@@ -240,7 +259,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (error) throw error;
 
-    // Fetch updated profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -258,6 +276,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkAuth: async () => {
     set({ loading: true });
     
+    // 1. Check Supabase Session
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session?.user) {
@@ -277,28 +296,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isGuest: false,
         loading: false,
       });
-    } else {
-      // Check for guest data in local storage
-      const guestDataStr = typeof window !== 'undefined' ? localStorage.getItem('guest_data') : null;
-      if (guestDataStr) {
-        try {
-          const guestData = JSON.parse(guestDataStr);
-          set({
-            user: {
-              id: guestData.id,
-              isGuest: true,
-              guestNickname: guestData.guestNickname,
-            },
+      return;
+    } 
+    
+    // 2. Check Guest Session
+    const guestDataStr = typeof window !== 'undefined' ? localStorage.getItem('guest_data') : null;
+    if (guestDataStr) {
+      try {
+        const guestData = JSON.parse(guestDataStr);
+        set({
+          user: {
+            id: guestData.id,
             isGuest: true,
-            loading: false,
-          });
-        } catch (e) {
-          if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
-          set({ user: null, isGuest: false, loading: false });
-        }
-      } else {
-        set({ user: null, isGuest: false, loading: false });
+            guestNickname: guestData.guestNickname,
+          },
+          isGuest: true,
+          loading: false,
+        });
+        return;
+      } catch (e) {
+        console.error("Failed to parse guest data", e);
+        if (typeof window !== 'undefined') localStorage.removeItem('guest_data');
       }
     }
+
+    // 3. No User
+    set({ user: null, isGuest: false, loading: false });
   },
 }));

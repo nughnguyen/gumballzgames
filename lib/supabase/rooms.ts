@@ -21,6 +21,7 @@ export async function getRoomByCode(roomCode: string): Promise<Room | null> {
 
 /**
  * Create a new game room
+ * Supports both Authenticated Users and Guests
  */
 export async function createRoom(
   roomCode: string,
@@ -29,6 +30,7 @@ export async function createRoom(
   hostNickname?: string,
   settings: Record<string, any> = {}
 ): Promise<Room | null> {
+  
   const roomData: any = {
     room_code: roomCode.toUpperCase(),
     game_type: gameType,
@@ -36,10 +38,12 @@ export async function createRoom(
     status: 'waiting',
   };
 
-  if (hostId) {
-    roomData.host_id = hostId;
-  } else if (hostNickname) {
-    roomData.host_nickname = hostNickname;
+  // Discriminate between Auth User vs Guest
+  if (hostId && !hostId.startsWith('guest_')) {
+      roomData.host_id = hostId;
+  } else {
+      roomData.host_guest_id = hostId; // Pass guest ID here
+      roomData.host_nickname = hostNickname;
   }
 
   const { data, error } = await supabase
@@ -65,14 +69,16 @@ export async function joinRoom(
   userId?: string,
   guestNickname?: string
 ): Promise<RoomParticipant | null> {
+  
   const participantData: any = {
     room_id: roomId,
     player_number: playerNumber,
   };
 
-  if (userId) {
+  if (userId && !userId.startsWith('guest_')) {
     participantData.user_id = userId;
-  } else if (guestNickname) {
+  } else {
+    participantData.guest_id = userId; // Store guest ID string
     participantData.guest_nickname = guestNickname;
   }
 
@@ -169,21 +175,7 @@ export async function getGameState(roomId: string): Promise<Record<string, any> 
 }
 
 /**
- * Delete expired rooms (called periodically)
- */
-export async function deleteExpiredRooms(): Promise<void> {
-  const { error } = await supabase.rpc('cleanup_expired_rooms');
-
-  if (error) {
-    console.error('Error deleting expired rooms:', error);
-  }
-}
-
-/**
- * Leave a room
- */
-/**
- * Save game history (stat, score) without persistent room/state
+ * Save game history with robust guest support
  */
 export async function saveGameHistory(
   gameType: 'caro' | 'battleship' | 'chess',
@@ -193,6 +185,7 @@ export async function saveGameHistory(
   movesCount: number,
   durationSeconds: number
 ): Promise<boolean> {
+  
   const historyData: any = {
     game_type: gameType,
     moves_count: movesCount,
@@ -201,14 +194,28 @@ export async function saveGameHistory(
     player2_nickname: player2.nickname,
   };
 
-  if (player1.id) historyData.player1_id = player1.id;
-  if (player2.id) historyData.player2_id = player2.id;
+  // Player 1
+  if (player1.id && !player1.id.startsWith('guest_')) {
+      historyData.player1_id = player1.id;
+  } else {
+      historyData.player1_guest_id = player1.id;
+  }
+
+  // Player 2
+  if (player2.id && !player2.id.startsWith('guest_')) {
+      historyData.player2_id = player2.id;
+  } else {
+      historyData.player2_guest_id = player2.id;
+  }
   
-  if (winner === 'draw') {
-    // No winner_id/nickname set
-  } else if (winner) {
-    if (winner.id) historyData.winner_id = winner.id;
-    if (winner.nickname) historyData.winner_nickname = winner.nickname;
+  // Winner
+  if (winner !== 'draw' && winner.id) {
+      if (!winner.id.startsWith('guest_')) {
+          historyData.winner_id = winner.id;
+      } else {
+          historyData.winner_guest_id = winner.id;
+      }
+      historyData.winner_nickname = winner.nickname;
   }
 
   const { error } = await supabase
