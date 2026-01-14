@@ -275,7 +275,7 @@ export default function CaroGamePage() {
 
     // Win Check
     const winResult = checkWin(newMoves);
-    let finalStatus = gameStatus;
+    let finalStatus: 'waiting' | 'playing' | 'finished' = gameStatus;
     let finalWinner = null;
 
     if (winResult.winner) {
