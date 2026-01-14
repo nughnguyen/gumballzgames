@@ -226,28 +226,236 @@ export default function CaroGamePage() {
   const gameStatusRef = useRef(gameStatus);
   const winnerRef = useRef(winner);
   const rematchRef = useRef(rematchRequests);
+  const mySymbolRef = useRef(mySymbol);
+  const activeOpponentIdRef = useRef<string | null>(null);
+  const onlineUsersRef = useRef(onlineUsers);
   
   useEffect(() => {
       movesRef.current = moves;
       gameStatusRef.current = gameStatus;
       winnerRef.current = winner;
       rematchRef.current = rematchRequests;
-  }, [moves, gameStatus, winner, rematchRequests]);
+      mySymbolRef.current = mySymbol;
+      onlineUsersRef.current = onlineUsers;
 
-  // Re-bind the request_state listener with fresh refs?
-  // UseEffect for listeners usually runs once. 
-  // Either we use a Mutable Ref for the callback or re-subscribe.
-  // Or we just check `movesRef.current` inside the callback.
-  // I will update the callback to use refs. (See code below)
+      // Lock opponent ID when game starts
+      if (gameStatus === 'playing' && !activeOpponentIdRef.current) {
+          const opponent = onlineUsers.find(u => {
+              const matchesMyUser = u.user_id === (user?.id || channelRef.current?.presenceState()?.[user?.id || '']?.[0]?.user_id);
+              // Fallback logic for presence/user matching
+              const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
+              return u.nickname !== myNickname; // Simple nickname check for now or ensure ID match
+          });
+           // Better: use the sort order
+          const sortedUsers = [...onlineUsers].sort((a, b) => 
+            new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+          );
+          const p1 = sortedUsers[0];
+          const p2 = sortedUsers[1];
+          // If I am p1, opponent is p2
+          const myId = user?.id || sortedUsers.find(u => u.nickname === (user?.guestNickname || user?.profile?.display_name))?.user_id;
 
-  // --- Handlers ---
+          if (myId === p1?.user_id) activeOpponentIdRef.current = p2?.user_id;
+          else if (myId === p2?.user_id) activeOpponentIdRef.current = p1?.user_id;
+      }
+      
+      // Reset opponent ref if game resets to waiting
+      if (gameStatus === 'waiting') {
+          activeOpponentIdRef.current = null;
+      }
+  }, [moves, gameStatus, winner, rematchRequests, mySymbol, onlineUsers, user]);
 
+  // Main Room Logic (Presence + Broadcast)
+  useEffect(() => {
+    if ((!user && !isGuest) || !roomCode) return;
+
+    // Stable ID for the session
+    const myPresenceId = user?.id || `guest-${Date.now()}`;
+    const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
+
+    const myPresence: PresenceState = {
+      user_id: myPresenceId,
+      nickname: myNickname,
+      joined_at: new Date().toISOString(),
+      online_at: new Date().toISOString(),
+    };
+
+    const channel = supabase.channel(`room:${roomCode}`, {
+      config: {
+        presence: {
+          key: myPresenceId,
+        },
+      },
+    });
+
+    channelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<PresenceState>();
+        const users = Object.values(state).flat();
+        setOnlineUsers(users);
+
+        // Determine Role immediately upon sync
+        const sortedUsers = users.sort((a, b) => 
+            new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+        );
+        const p1 = sortedUsers[0];
+        const p2 = sortedUsers[1];
+
+        // Only update symbol if game is NOT playing (prevent swapping mid-game)
+        if (gameStatusRef.current !== 'playing') {
+             if (p1?.user_id === myPresenceId) setMySymbol('X');
+             else if (p2?.user_id === myPresenceId) setMySymbol('O');
+             else setMySymbol(null); 
+        }
+
+        // Auto-start if 2 players present and waiting
+        if (users.length >= 2) {
+             setGameStatus(prev => {
+                 // Check using Ref to avoid stale closure during sync? 
+                 // SetGameStatus updater is safe.
+                 if (prev === 'waiting' && sortedUsers.length >= 2) return 'playing';
+                 return prev;
+             });
+        }
+      })
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const newUsers = newPresences as unknown as PresenceState[];
+        newUsers.forEach(u => {
+             setChatMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                senderId: 'system',
+                senderName: 'System',
+                content: `${u.nickname} joined.`,
+                timestamp: Date.now(),
+                isSystem: true
+             }]);
+        });
+      })
+      .on('presence', { event: 'leave' }, async ({ leftPresences }) => {
+        const leftUsers = leftPresences as unknown as PresenceState[];
+        
+        let opponentLeft = false;
+        leftUsers.forEach(u => {
+             setChatMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                senderId: 'system',
+                senderName: 'System',
+                content: `${u.nickname} left.`,
+                timestamp: Date.now(),
+                isSystem: true
+             }]);
+
+             // Check if this user was my opponent
+             if (gameStatusRef.current === 'playing' && u.user_id === activeOpponentIdRef.current) {
+                 opponentLeft = true;
+             }
+        });
+
+        if (opponentLeft && mySymbolRef.current) {
+             const winnerSymbol = mySymbolRef.current;
+             setWinner(winnerSymbol);
+             setGameStatus('finished');
+             setShowEndModal(true);
+             
+             handleSendMessage("Opponent disconnected. You win!");
+             
+             // Save history (Since opponent is gone, I am responsible)
+             const myInfo = { 
+                 id: user?.id || (user as any)?.guestId, // Handle guest ID better
+                 nickname: myNickname 
+             };
+             // We can try to get opponent info from the leftUser object
+             const leaver = leftUsers.find(u => u.user_id === activeOpponentIdRef.current);
+             const opponentInfo = {
+                 id: leaver?.user_id.startsWith('guest') ? undefined : leaver?.user_id,
+                 nickname: leaver?.nickname
+             };
+             
+             await saveGameHistory(
+                 'caro',
+                 mySymbolRef.current === 'X' ? myInfo : opponentInfo,
+                 mySymbolRef.current === 'O' ? myInfo : opponentInfo,
+                 myInfo, // Winner
+                 movesRef.current.length,
+                 0 
+             );
+        }
+      })
+      .on('broadcast', { event: 'game_update' }, (payload) => {
+        const { moves: newMoves, winner: newWinner, gameStatus: newStatus, rematchRequests: newRequests } = payload.payload as any;
+        
+        if (newMoves) setMoves(newMoves);
+        if (newMoves && newMoves.length === 0) {
+           setWinner(null);
+           setGameStatus('playing');
+           setShowEndModal(false);
+           setRematchRequests([]);
+        }
+
+        if (newWinner) {
+            setWinner(newWinner);
+            setShowEndModal(true);
+        }
+        if (newStatus) setGameStatus(newStatus);
+        if (newRequests) setRematchRequests(newRequests);
+      })
+      .on('broadcast', { event: 'chat' }, (payload) => {
+         setChatMessages(prev => [...prev, payload.payload as ChatMessage]);
+      })
+      .on('broadcast', { event: 'request_state' }, () => {
+         if (movesRef.current.length > 0) {
+             channel.send({
+                 type: 'broadcast',
+                 event: 'sync_state',
+                 payload: {
+                     moves: movesRef.current,
+                     gameStatus: gameStatusRef.current,
+                     winner: winnerRef.current,
+                     rematchRequests: rematchRef.current
+                 }
+             });
+         }
+      })
+      .on('broadcast', { event: 'sync_state' }, (payload) => {
+         if (hasSyncedRef.current) return;
+         const data = payload.payload;
+         if (data.moves) setMoves(data.moves);
+         if (data.gameStatus) setGameStatus(data.gameStatus);
+         if (data.winner) {
+             setWinner(data.winner);
+             setShowEndModal(true);
+         }
+         if (data.rematchRequests) setRematchRequests(data.rematchRequests);
+         hasSyncedRef.current = true;
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track(myPresence);
+          setLoading(false);
+          
+          // Request state
+          channel.send({
+              type: 'broadcast',
+              event: 'request_state',
+              payload: {}
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomCode, user, isGuest]); 
+
+  // Handlers
   const handleSendMessage = async (content: string) => {
     if (!user) return;
     const senderName = user.guestNickname || user.profile?.display_name || 'Player';
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
-      senderId: user.id,
+      senderId: user.id || 'guest',
       senderName,
       content,
       timestamp: Date.now(),
