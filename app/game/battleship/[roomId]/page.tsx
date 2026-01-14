@@ -28,7 +28,7 @@ export default function BattleshipMultiplayerPage() {
   const { user, isGuest, checkAuth, loading: authLoading } = useAuthStore();
   
   // -- Game State --
-  const [phase, setPhase] = useState<GamePhase>('waiting');
+  const [phase, setPhase] = useState<GamePhase>('placement');
   const [myGrid, setMyGrid] = useState<Grid>(createEmptyGrid());
   const [myRadar, setMyRadar] = useState<Grid>(createEmptyGrid());
   
@@ -119,12 +119,6 @@ export default function BattleshipMultiplayerPage() {
         if (opponent) {
            setOpponentReady(!!opponent.isReady);
         }
-        
-        setPhase(prev => {
-           if (prev === 'waiting' && users.length >= 2) return 'placement';
-           if (prev === 'placement' && users.length < 2) return 'waiting'; 
-           return prev;
-        });
       })
       .on('broadcast', { event: 'fire' }, ({ payload }) => {
          handleIncomingFire(payload.x, payload.y);
@@ -400,8 +394,16 @@ export default function BattleshipMultiplayerPage() {
                      </button>
                   </div>
                   <div className="flex items-center gap-2 text-sm mt-1">
-                    <span className={`flex items-center gap-1 ${isMyTurn ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]'}`}>
-                      {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
+                    <span 
+                        className={`flex items-center gap-1 ${
+                            phase === 'playing' 
+                                ? (isMyTurn ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]')
+                                : 'text-[var(--text-secondary)]'
+                        }`}
+                    >
+                      {onlineUsers.length < 2 
+                        ? <span className="text-[var(--accent-orange)] animate-pulse">Waiting for Opponent...</span> 
+                        : (phase === 'playing' ? (isMyTurn ? 'Your Turn' : "Opponent's Turn") : 'Opponent Connected')}
                     </span>
                     <span className="text-[var(--border-primary)]">|</span>
                     <span className="text-[var(--text-tertiary)]">Vs: {opponentName}</span>
