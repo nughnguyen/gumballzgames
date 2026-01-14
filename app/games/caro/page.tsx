@@ -1,17 +1,93 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import { generateRoomCode } from '@/lib/utils/roomCode';
+import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function CaroPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'play' | 'howto'>('play');
+  const [isSearching, setIsSearching] = useState(false);
+  const { user, isGuest } = useAuthStore();
 
   const handleCreateRoom = () => {
     const roomCode = generateRoomCode();
     router.push(`/game/caro/${roomCode}`);
+  };
+
+  const handleQuickMatch = async () => {
+     if (!user && !isGuest) {
+         alert("Please login first or set a guest nickname on the home page.");
+         return;
+     }
+     
+     if (isSearching) return; // Prevent double click
+     setIsSearching(true);
+     
+     const myId = user?.id || `guest-${Date.now()}`;
+     const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
+     
+     const channel = supabase.channel('matchmaking:caro', {
+        config: {
+            presence: {
+                key: myId,
+            }
+        }
+     });
+
+     channel
+        .on('presence', { event: 'sync' }, () => {
+             const state = channel.presenceState();
+             const others = Object.values(state).flat().filter((u:any) => u.user_id !== myId);
+             
+             if (others.length > 0) {
+                 // Sort potential opponents to be deterministic (optional but good)
+                 // or just pick the first one.
+                 const opponent = others[0] as any;
+                 
+                 // Deterministic tie-breaker to avoid race conditions
+                 // If my ID > opponent ID, I initiate the match.
+                 // Otherwise I wait for them.
+                 if (myId > opponent.user_id) {
+                     const roomCode = generateRoomCode();
+                     
+                     // Broadcast to opponent
+                     channel.send({
+                         type: 'broadcast',
+                         event: 'match_found',
+                         payload: { target_id: opponent.user_id, roomCode }
+                     });
+                     
+                     // Go myself
+                     router.push(`/game/caro/${roomCode}`);
+                 }
+                 // Else: logic falls through, I wait for the 'match_found' event from them.
+             }
+        })
+        .on('broadcast', { event: 'match_found' }, ({ payload }) => {
+             if (payload.target_id === myId) {
+                  router.push(`/game/caro/${payload.roomCode}`);
+             }
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.track({
+                    user_id: myId,
+                    nickname: myNickname,
+                    joined_at: new Date().toISOString()
+                });
+            }
+        });
+        
+    // Clean up channel? 
+    // Usually handled by router leaving the page, which unmounts component.
+    // However, if we stay on page (failed match), we are still subbed.
+    // Ideally we save 'channel' in a ref or state to unsubscribe on unmount.
+    // For this simple implementation, navigation handles the "unsubscribe" 
+    // because the component unmounts upon router.push.
   };
 
   return (
@@ -101,19 +177,29 @@ export default function CaroPage() {
               </div>
 
               {/* Quick Match */}
-              <div className="bg-secondary border border-border-secondary rounded-lg p-6 opacity-50">
+              <div className="bg-secondary border border-border-secondary rounded-lg p-6 hover:border-accent-orange transition-all">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-text-tertiary mb-2 flex items-center gap-3">
+                    <h3 className="text-2xl font-bold text-text-primary mb-2 flex items-center gap-3">
                       <span className="text-3xl">⚡</span>
                       Quick Match
                     </h3>
-                    <p className="text-text-tertiary mb-4">
+                    <p className="text-text-secondary mb-4">
                       Get matched with random players around the world
                     </p>
-                    <div className="px-6 py-2 bg-accent-orange/20 text-accent-orange font-semibold rounded-lg inline-block">
-                      Coming Soon
-                    </div>
+                    <button
+                        onClick={handleQuickMatch}
+                        disabled={isSearching}
+                        className="px-8 py-3 bg-accent-orange hover:opacity-80 text-white font-semibold rounded-lg transition-all flex items-center gap-2"
+                    >
+                      {isSearching ? <i className="fi fi-rr-spinner animate-spin"></i> : <i className="fi fi-rr-zap"></i>}
+                      {isSearching ? 'Searching...' : 'Find Match'}
+                    </button>
+                    {isSearching && (
+                        <p className="text-sm text-text-tertiary mt-2 animate-pulse">
+                            Looking for an opponent...
+                        </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -32,7 +32,8 @@ export default function HomePage() {
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
-      router.push(`/room/${roomCode}`);
+      // Default to Caro for now as it's the only active game
+      router.push(`/game/caro/${roomCode}`);
     }
   };
 

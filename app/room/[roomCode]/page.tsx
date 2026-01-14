@@ -12,35 +12,16 @@ export default function RoomRedirectPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function redirectToGame() {
+    function redirectToGame() {
       if (!roomCode) {
         setError('Invalid room code');
         setLoading(false);
         return;
       }
 
-      try {
-        const room = await getRoomByCode(roomCode);
-
-        if (!room) {
-          setError('Room not found. Please check the room code and try again.');
-          setLoading(false);
-          return;
-        }
-
-        if (room.status === 'finished') {
-          setError('This game has already finished.');
-          setLoading(false);
-          return;
-        }
-
-        // Redirect to the appropriate game page
-        router.replace(`/game/${room.game_type}/${roomCode}`);
-      } catch (err) {
-        console.error('Error looking up room:', err);
-        setError('An error occurred. Please try again.');
-        setLoading(false);
-      }
+      // Bypass DB check and redirect to default game (Caro)
+      // Since we are no longer storing room state via DB
+      router.replace(`/game/caro/${roomCode}`);
     }
 
     redirectToGame();
