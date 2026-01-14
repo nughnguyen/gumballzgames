@@ -45,7 +45,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               username: `user_${data.user.id.slice(0, 8)}`,
               display_name: `User ${data.user.id.slice(0, 8)}`,
           };
-          const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+          const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
+          if (insertError) console.error("AuthStore Login Fallback Error:", insertError);
           if (!insertError) profile = newProfile as Profile;
       }
 
@@ -62,6 +63,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (email: string, password: string, username: string) => {
+    // 1. Check if username exists (to avoid DB trigger crash on unique constraint)
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single();
+
+    if (existingUser) {
+      throw new Error('Username is already taken');
+    }
+
+    // 2. Register with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -98,7 +111,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
           const { error: insertError } = await supabase
               .from('profiles')
-              .insert(newProfile);
+              .upsert(newProfile);
+
+          if (insertError) console.error("AuthStore Register Fallback Error:", insertError);
               
           if (!insertError) {
               profile = newProfile as Profile;
