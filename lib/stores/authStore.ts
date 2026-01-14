@@ -12,6 +12,7 @@ interface AuthState {
   register: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   loginAsGuest: (nickname: string) => void;
+  renameGuest: (newNickname: string) => void;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -111,6 +112,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         guestNickname: nickname,
       },
       isGuest: true,
+    });
+  },
+
+  renameGuest: (newNickname: string) => {
+    const { user } = get();
+    if (!user || !user.isGuest) return;
+
+    // Update local storage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('guest_data', JSON.stringify({
+        id: user.id,
+        guestNickname: newNickname
+      }));
+    }
+
+    set({
+      user: {
+        ...user,
+        guestNickname: newNickname,
+      }
     });
   },
 
