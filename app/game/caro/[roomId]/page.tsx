@@ -280,7 +280,7 @@ export default function CaroGamePage() {
 
     if (winResult.winner) {
       finalWinner = winResult.winner;
-      finalStatus = 'finished';
+      finalStatus = 'finished' as any;
       setWinner(finalWinner);
       setGameStatus('finished');
       setShowEndModal(true);
