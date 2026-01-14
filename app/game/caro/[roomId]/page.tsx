@@ -119,7 +119,7 @@ export default function CaroGamePage() {
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const newUsers = newPresences as PresenceState[];
+        const newUsers = newPresences as unknown as PresenceState[];
         newUsers.forEach(u => {
              // Avoid duplicate system messages if possible, but difficult without tracking.
              // Simple "joined" is fine.
@@ -134,7 +134,7 @@ export default function CaroGamePage() {
         });
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const leftUsers = leftPresences as PresenceState[];
+        const leftUsers = leftPresences as unknown as PresenceState[];
         leftUsers.forEach(u => {
              setChatMessages(prev => [...prev, {
                 id: Date.now().toString(),
