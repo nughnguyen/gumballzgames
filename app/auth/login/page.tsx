@@ -37,7 +37,7 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "outCirc" }}
+        transition={{ duration: 0.5, ease: "circOut" }}
         className="w-full max-w-md relative z-10 p-4"
       >
         <div className="bg-secondary shadow-2xl rounded-xl border border-border-primary overflow-hidden">
