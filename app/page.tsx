@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { getRoomByCode } from '@/lib/supabase/rooms';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 
@@ -30,12 +31,7 @@ export default function HomePage() {
     }
   };
 
-  const handleJoinRoom = () => {
-    if (roomCode.trim()) {
-      // Default to Caro for now as it's the only active game
-      router.push(`/game/caro/${roomCode}`);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -118,33 +114,8 @@ export default function HomePage() {
                   Experience real-time multiplayer gaming directly in your browser. No downloads, no registration required for guests.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button 
-                    onClick={() => {
-                      const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                      router.push(`/game/caro/${randomCode}`);
-                    }}
-                    className="px-8 py-4 bg-[var(--accent-green)] text-white font-bold rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20"
-                  >
-                    <i className="fi fi-rr-play"></i> Play Now
-                  </button>
-                  <div className="flex-1 max-w-md relative flex gap-2">
-                    {/* Game Selector */}
-                    <div className="relative z-20">
-                      <select
-                        onChange={(e) => {
-                           // Optional: visual handler, but logic is mainly in Join button
-                        }}
-                        className="h-full pl-3 pr-8 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] appearance-none outline-none focus:border-[var(--accent-green)] cursor-pointer"
-                        defaultValue="caro"
-                        id="gameSelect"
-                      >
-                        <option value="caro">🎯 Caro</option>
-                        <option value="battleship">⚓ Battleship</option>
-                      </select>
-                      <i className="fi fi-rr-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none"></i>
-                    </div>
-
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <div className="w-full max-w-md relative flex gap-2">
                     <div className="relative flex-1">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i className="fi fi-rr-keyboard text-[var(--text-tertiary)]"></i>
@@ -156,24 +127,37 @@ export default function HomePage() {
                         placeholder="Enter Code" 
                         className="w-full pl-11 pr-24 py-4 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] uppercase font-mono"
                         maxLength={10}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && roomCode.trim()) {
+                            try {
+                                const room = await getRoomByCode(roomCode.trim());
+                                if (room) {
+                                    router.push(`/game/${room.game_type}/${room.room_code}`);
+                                } else {
+                                    alert('Room not found!');
+                                }
+                            } catch (error) {
+                                console.error("Error joining room:", error);
+                                // Fallback for legacy/offline testing if needed, or just error
+                                alert('Error joining room. Please try again.');
+                            }
+                          }
+                        }}
                       />
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (!roomCode.trim()) return;
                           
-                          // Smart Detection
-                          if (roomCode.startsWith('BS-')) {
-                              router.push(`/game/battleship/${roomCode}`);
-                          } else if (roomCode.startsWith('CR-')) {
-                              router.push(`/game/caro/${roomCode}`);
-                          } else {
-                              // Fallback to selected
-                              const selected = (document.getElementById('gameSelect') as HTMLSelectElement).value;
-                              if (selected === 'battleship') {
-                                router.push(`/game/battleship/${roomCode}`);
+                          try {
+                              const room = await getRoomByCode(roomCode.trim());
+                              if (room) {
+                                  router.push(`/game/${room.game_type}/${room.room_code}`);
                               } else {
-                                router.push(`/game/caro/${roomCode}`);
+                                  alert('Room not found!');
                               }
+                          } catch (error) {
+                              console.error("Error joining room:", error);
+                              alert('Error joining room. Please try again.');
                           }
                         }}
                         disabled={!roomCode.trim()}

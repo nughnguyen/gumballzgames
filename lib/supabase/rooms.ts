@@ -20,6 +20,25 @@ export async function getRoomByCode(roomCode: string): Promise<Room | null> {
 }
 
 /**
+ * Delete rooms that have been inactive/empty for > 5 minutes
+ */
+export async function cleanupOldRooms(): Promise<void> {
+  // ISO string for 5 minutes ago
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+  // Delete waiting rooms created more than 5 minutes ago
+  const { error } = await supabase
+    .from('rooms')
+    .delete()
+    .lt('created_at', fiveMinutesAgo)
+    .eq('status', 'waiting'); // Only delete waiting rooms to avoid killing active games
+
+  if (error) {
+    console.error('Error cleaning up rooms:', error);
+  }
+}
+
+/**
  * Create a new game room
  * Supports both Authenticated Users and Guests
  */
@@ -31,6 +50,9 @@ export async function createRoom(
   settings: Record<string, any> = {}
 ): Promise<Room | null> {
   
+  // Lazy cleanup: Try to clean old rooms when creating a new one
+  await cleanupOldRooms();
+
   const roomData: any = {
     room_code: roomCode.toUpperCase(),
     game_type: gameType,
