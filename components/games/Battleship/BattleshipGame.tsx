@@ -87,6 +87,7 @@ export default function BattleshipGame() {
         setSelectedShip(nextShip);
       } else {
         setSelectedShip(null);
+        setHoveredCells([]);
       }
     } else {
       addLog("Cannot deploy there, Commander. Airspace invalid.");
@@ -123,6 +124,7 @@ export default function BattleshipGame() {
     setMyGrid(randomizeShips());
     setPlacedShips(SHIPS.map(s => s.id));
     setSelectedShip(null);
+    setHoveredCells([]);
     addLog("Fleet auto-deployed in random formation.");
   };
 
@@ -222,10 +224,10 @@ export default function BattleshipGame() {
     let content = null;
     let borderClass = "border-[#D6E5FF]/10";
 
-    if (!isRadar && phase === 'placement') {
+    if (!isRadar && phase === 'placement' && selectedShip) {
       const isHovered = hoveredCells.some(h => h.r === cell.row && h.c === cell.col);
       if (isHovered) {
-        if (canPlaceShip(myGrid, selectedShip!, hoveredCells[0].r, hoveredCells[0].c, orientation)) {
+        if (canPlaceShip(myGrid, selectedShip, hoveredCells[0].r, hoveredCells[0].c, orientation)) {
            bgClass = "bg-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.4)]";
         } else {
            bgClass = "bg-red-500/30";
