@@ -1,6 +1,16 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- CLEANUP (For development/reset)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP TABLE IF EXISTS public.friendships CASCADE;
+DROP TABLE IF EXISTS public.game_history CASCADE;
+DROP TABLE IF EXISTS public.game_states CASCADE;
+DROP TABLE IF EXISTS public.room_participants CASCADE;
+DROP TABLE IF EXISTS public.rooms CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
 -- PROFILES TABLE
 -- Handles authenticated users
 CREATE TABLE public.profiles (

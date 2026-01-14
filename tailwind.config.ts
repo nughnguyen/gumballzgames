@@ -9,44 +9,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Chess.com Inspired Palette - Solid Colors Only
+        // Unified Theme mapped to CSS Variables
         primary: {
-          DEFAULT: '#312e2b',
-          light: '#3d3a36',
-          dark: '#262522',
+          DEFAULT: 'var(--bg-primary)',
+          light: 'var(--bg-tertiary)', // Mapping light to tertiary for lighter shade
+          dark: '#020617', // Manual Darkest
         },
         secondary: {
-          DEFAULT: '#262522',
-          light: '#312e2b',
-          dark: '#1a1816',
+          DEFAULT: 'var(--bg-secondary)',
+          light: 'var(--bg-tertiary)',
+          dark: 'var(--bg-primary)',
         },
         board: {
-          light: '#eeeed2',
-          dark: '#769656',
+          light: 'var(--bg-board-light)',
+          dark: 'var(--bg-board-dark)',
         },
         accent: {
-          green: '#81b64c',
-          blue: '#7fa9d1',
-          orange: '#e58a3c',
+          green: 'var(--accent-green)',
+          blue: 'var(--accent-blue)',
+          orange: 'var(--accent-orange)',
         },
         text: {
-          primary: '#ffffff',
-          secondary: '#b3b3b3',
-          tertiary: '#7a7a7a',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
         },
         border: {
-          primary: '#3d3d3d',
-          secondary: '#2a2825',
+          primary: 'var(--border-primary)',
+          secondary: 'var(--border-secondary)',
         },
         status: {
-          online: '#81b64c',
-          offline: '#666666',
-          away: '#e58a3c',
+          online: 'var(--status-online)',
+          offline: 'var(--status-offline)',
+          away: 'var(--status-away)',
         },
         game: {
-          win: '#81b64c',
-          lose: '#d84949',
-          draw: '#7a7a7a',
+          win: 'var(--game-win)',
+          lose: 'var(--game-lose)',
+          draw: 'var(--game-draw)',
         },
       },
       animation: {

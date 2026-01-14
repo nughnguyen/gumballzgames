@@ -157,70 +157,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Games Grid */}
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-                  <i className="fi fi-rr-apps text-[var(--accent-green)]"></i> Available Games
-                </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Caro Card */}
-                <Link href="/games/caro" className="group block">
-                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 hover:border-[var(--accent-green)] transition-all hover:translate-y-[-4px] relative overflow-hidden">
-                    <div className="absolute top-4 right-4 bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-xs font-bold border border-green-500/20">
-                      POPULAR
-                    </div>
-                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-green)] group-hover:bg-[var(--accent-green)] group-hover:text-white transition-colors">
-                      <i className="fi fi-rr-cross-circle text-3xl"></i>
-                    </div>
-                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent-green)] transition-colors">Caro (Gomoku)</h3>
-                    <p className="text-[var(--text-secondary)] mb-6">Strategy board game. Get 5 in a row to win against your opponent.</p>
-                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~10m</span>
-                    </div>
-                  </div>
-                </Link>
 
-                {/* Battleship Card */}
-                <div className="group block opacity-75 cursor-not-allowed">
-                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden">
-                    <div className="absolute top-4 right-4 bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-primary)]">
-                      SOON
-                    </div>
-                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-orange)]">
-                      <i className="fi fi-rr-ship text-3xl"></i>
-                    </div>
-                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Battleship</h3>
-                    <p className="text-[var(--text-secondary)] mb-6">Naval strategy game. Guess coordinates to sink the enemy fleet.</p>
-                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~15m</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chess Card */}
-                <div className="group block opacity-75 cursor-not-allowed">
-                  <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6 relative overflow-hidden">
-                    <div className="absolute top-4 right-4 bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-primary)]">
-                      SOON
-                    </div>
-                    <div className="w-16 h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mb-6 text-[var(--accent-blue)]">
-                      <i className="fi fi-rr-chess-piece text-3xl"></i>
-                    </div>
-                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">Chess</h3>
-                    <p className="text-[var(--text-secondary)] mb-6">Classic strategy. Checkmate the opponent's king to win.</p>
-                    <div className="flex items-center gap-4 text-sm text-[var(--text-tertiary)]">
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-users"></i> 2 Players</span>
-                      <span className="flex items-center gap-1"><i className="fi fi-rr-time-fast"></i> ~20m</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Features Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-[var(--border-secondary)]">

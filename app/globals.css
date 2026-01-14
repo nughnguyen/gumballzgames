@@ -8,36 +8,40 @@
    =================================== */
 
 :root {
+  /* Unified Theme: Modern Dark Gaming (Deep Slate/Blue) */
+  
   /* Background Colors */
-  --bg-primary: #312e2b;
-  --bg-secondary: #262522;
-  --bg-tertiary: #1a1816;
-  --bg-board-light: #eeeed2;
-  --bg-board-dark: #769656;
+  --bg-primary: #0f172a;    /* Deep Slate 900 */
+  --bg-secondary: #1e293b;  /* Slate 800 */
+  --bg-tertiary: #334155;   /* Slate 700 */
+  
+  /* Board Colors (Game Specific - but consistent tokens) */
+  --bg-board-light: #e2e8f0; /* Slate 200 */
+  --bg-board-dark: #475569;  /* Slate 600 */
   
   /* Text Colors */
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-tertiary: #7a7a7a;
+  --text-primary: #f8fafc;   /* Slate 50 */
+  --text-secondary: #cbd5e1; /* Slate 300 */
+  --text-tertiary: #94a3b8;  /* Slate 400 */
   
   /* Accent Colors */
-  --accent-green: #81b64c;
-  --accent-blue: #7fa9d1;
-  --accent-orange: #e58a3c;
+  --accent-green: #22c55e;   /* Green 500 (Vibrant) */
+  --accent-blue: #3b82f6;    /* Blue 500 */
+  --accent-orange: #f97316;  /* Orange 500 */
   
   /* Border & Divider */
-  --border-primary: #3d3d3d;
-  --border-secondary: #2a2825;
+  --border-primary: #334155;   /* Slate 700 */
+  --border-secondary: #1e293b; /* Slate 800 */
   
   /* Status Colors */
-  --status-online: #81b64c;
-  --status-offline: #666666;
-  --status-away: #e58a3c;
+  --status-online: #22c55e;
+  --status-offline: #64748b;
+  --status-away: #f97316;
   
   /* Game State Colors */
-  --game-win: #81b64c;
-  --game-lose: #d84949;
-  --game-draw: #7a7a7a;
+  --game-win: #22c55e;
+  --game-lose: #ef4444;      /* Red 500 */
+  --game-draw: #94a3b8;
 }
 
 /* Base Styles */

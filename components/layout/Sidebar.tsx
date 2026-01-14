@@ -74,20 +74,17 @@ export default function Sidebar() {
               <span className="font-semibold">Caro</span>
             </Link>
             
-            {/* Battleship - Coming Soon */}
+            {/* Battleship - New! */}
             <Link
               href="/games/battleship"
-              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 pathname === '/games/battleship'
-                  ? 'bg-primary-light text-text-primary'
-                  : 'text-text-secondary hover:bg-primary-light hover:text-text-primary opacity-60'
+                  ? 'bg-board-dark text-white'
+                  : 'text-text-secondary hover:bg-primary-light hover:text-text-primary'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⚓</span>
-                <span className="font-semibold">Battleship</span>
-              </div>
-              <span className="text-xs bg-accent-orange px-2 py-0.5 rounded text-white">Soon</span>
+              <span className="text-2xl">⚓</span>
+              <span className="font-semibold">Battleship</span>
             </Link>
             
             {/* Chess - Coming Soon */}

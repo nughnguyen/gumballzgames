@@ -132,76 +132,99 @@ export default function CaroPage() {
           </div>
 
           {/* Play Tab */}
+          {/* Play Tab */}
           {activeTab === 'play' && (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Play with Friends */}
-              <div className="bg-secondary border border-border-primary rounded-lg p-6 hover:border-accent-green transition-all">
-                <div className="flex items-start justify-between">
+              <div className="col-span-1 md:col-span-2 bg-secondary border border-border-primary rounded-lg p-5 hover:border-accent-green transition-all shadow-lg">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-text-primary mb-2 flex items-center gap-3">
-                      <span className="text-3xl">👥</span>
-                      Play with Friends
-                    </h3>
-                    <p className="text-text-secondary mb-4">
-                      Create a room and share the code with your friends to play together
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+                            <span className="text-2xl">👥</span>
+                            Play with Friends
+                        </h3>
+                        <div className="text-accent-green text-xs font-bold bg-accent-green/10 px-2 py-1 rounded md:hidden">
+                            Popular
+                        </div>
+                    </div>
+                    <p className="text-text-secondary text-sm mb-4">
+                      Create a room and share the code with friends.
                     </p>
-                    <button
-                      onClick={handleCreateRoom}
-                      className="px-8 py-3 bg-accent-green hover:opacity-80 text-white font-semibold rounded-lg transition-all"
-                    >
-                      Create Room
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={handleCreateRoom}
+                          className="px-6 py-2.5 bg-accent-green hover:opacity-90 text-primary font-bold rounded-lg transition-all shadow-lg shadow-green-500/20 text-sm whitespace-nowrap"
+                        >
+                          Create Room
+                        </button>
+                        <div className="flex gap-2 flex-1 max-w-sm">
+                             <input 
+                                type="text" 
+                                placeholder="Enter Code" 
+                                id="caroRoomCodeInput" 
+                                className="flex-1 bg-primary border border-border-primary rounded-lg px-3 py-2.5 text-text-primary uppercase text-sm placeholder:text-text-tertiary outline-none focus:border-accent-green" 
+                             />
+                             <button 
+                                onClick={() => {
+                                    const code = (document.getElementById('caroRoomCodeInput') as HTMLInputElement).value;
+                                    if(code) router.push(`/game/caro/${code.toUpperCase()}`);
+                                }}
+                                className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-text-primary font-semibold rounded-lg border border-border-primary text-sm"
+                             >
+                                Join
+                             </button>
+                        </div>
+                    </div>
                   </div>
-                  <div className="text-accent-green text-sm font-bold bg-accent-green/10 px-3 py-1 rounded">
+                  <div className="hidden md:block text-accent-green text-xs font-bold bg-accent-green/10 px-2 py-1 rounded self-start">
                     Popular
                   </div>
                 </div>
               </div>
 
               {/* Play with Bot */}
-              <div className="bg-secondary border border-border-secondary rounded-lg p-6 opacity-50">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-text-tertiary mb-2 flex items-center gap-3">
-                      <span className="text-3xl">🤖</span>
+              <div className="bg-secondary border border-border-secondary rounded-lg p-5 opacity-50 flex flex-col justify-between">
+                <div>
+                    <h3 className="text-lg font-bold text-text-tertiary mb-2 flex items-center gap-2">
+                      <span className="text-2xl">🤖</span>
                       Play with Bot
                     </h3>
-                    <p className="text-text-tertiary mb-4">
-                      Practice against AI with adjustable difficulty levels
+                    <p className="text-text-tertiary text-sm mb-3">
+                      Practice against AI with adjustable difficulties.
                     </p>
-                    <div className="px-6 py-2 bg-accent-orange/20 text-accent-orange font-semibold rounded-lg inline-block">
+                </div>
+                <div>
+                    <div className="px-3 py-1 bg-accent-orange/20 text-accent-orange text-xs font-bold rounded inline-block">
                       Coming Soon
                     </div>
-                  </div>
                 </div>
               </div>
 
               {/* Quick Match */}
-              <div className="bg-secondary border border-border-secondary rounded-lg p-6 hover:border-accent-orange transition-all">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-text-primary mb-2 flex items-center gap-3">
-                      <span className="text-3xl">⚡</span>
+              <div className="bg-secondary border border-border-secondary rounded-lg p-5 hover:border-accent-orange transition-all flex flex-col justify-between">
+                <div>
+                    <h3 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
+                      <span className="text-2xl">⚡</span>
                       Quick Match
                     </h3>
-                    <p className="text-text-secondary mb-4">
-                      Get matched with random players around the world
+                    <p className="text-text-secondary text-sm mb-3">
+                      Get matched with random players worldwide.
                     </p>
-                    <button
-                        onClick={handleQuickMatch}
-                        disabled={isSearching}
-                        className="px-8 py-3 bg-accent-orange hover:opacity-80 text-white font-semibold rounded-lg transition-all flex items-center gap-2"
-                    >
-                      {isSearching ? <i className="fi fi-rr-spinner animate-spin"></i> : <i className="fi fi-rr-zap"></i>}
-                      {isSearching ? 'Searching...' : 'Find Match'}
-                    </button>
-                    {isSearching && (
-                        <p className="text-sm text-text-tertiary mt-2 animate-pulse">
-                            Looking for an opponent...
-                        </p>
-                    )}
-                  </div>
                 </div>
+                <button
+                    onClick={handleQuickMatch}
+                    disabled={isSearching}
+                    className="w-full py-2.5 bg-accent-orange hover:opacity-80 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                    {isSearching ? <i className="fi fi-rr-spinner animate-spin"></i> : <i className="fi fi-rr-zap"></i>}
+                    {isSearching ? 'Searching...' : 'Find Match'}
+                </button>
+                {isSearching && (
+                    <p className="text-xs text-text-tertiary mt-2 animate-pulse text-center">
+                        Scanning...
+                    </p>
+                )}
               </div>
             </div>
           )}
