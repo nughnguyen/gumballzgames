@@ -76,26 +76,28 @@ export default function BattleshipMultiplayerPage() {
     setLogs(prev => [msg, ...prev].slice(0, 5));
   };
   
+  // Stable Identity
+  const [joinTime] = useState(new Date().toISOString());
+  const myUserId = user?.id || `guest-${joinTime}`; // Use joinTime to ensure stable guest ID if no user
   const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
 
   // --- SUPABASE CONNECTION ---
   useEffect(() => {
     if (authLoading) return;
-    if ((!user && !isGuest) || !roomId) return;
+    if (!roomId) return;
 
-    const myPresenceId = user?.id || `guest-${Date.now()}`;
     setMyGrid(createEmptyGrid());
     setMyRadar(createEmptyGrid());
     
     const channel = supabase.channel(`room:${roomId}`, {
-      config: { presence: { key: myPresenceId } }
+      config: { presence: { key: myUserId } }
     });
     channelRef.current = channel;
 
     const myPresence: PresenceState = {
-      user_id: myPresenceId,
+      user_id: myUserId,
       nickname: myNickname,
-      joined_at: new Date().toISOString(),
+      joined_at: joinTime,
       isReady: false
     };
 
@@ -107,15 +109,17 @@ export default function BattleshipMultiplayerPage() {
         );
         setOnlineUsers(users);
 
-        if (users[0]?.user_id === myPresenceId) {
+        // Determine Role
+        if (users[0]?.user_id === myUserId) {
             setMyRole('host');
-        } else if (users[1]?.user_id === myPresenceId) {
+        } else if (users[1]?.user_id === myUserId) {
             setMyRole('guest');
         } else {
             setMyRole(null);
         }
         
-        const opponent = users.find(u => u.user_id !== myPresenceId);
+        // Check Opponent Status
+        const opponent = users.find(u => u.user_id !== myUserId);
         if (opponent) {
            setOpponentReady(!!opponent.isReady);
         }
@@ -142,7 +146,7 @@ export default function BattleshipMultiplayerPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, user, isGuest, authLoading]);
+  }, [roomId, user, isGuest, authLoading, joinTime, myUserId, myNickname]); // Dependencies updated
 
   // --- GAME ACTIONS ---
 
@@ -177,16 +181,19 @@ export default function BattleshipMultiplayerPage() {
      setPhase('ready');
      addLog("Fleet locked. Waiting for opponent...");
      
-     const myPresenceId = user?.id || onlineUsers.find(u => u.nickname === myNickname)?.user_id;
-     if (myPresenceId) {
-          const me = onlineUsers.find(u => u.user_id === myPresenceId);
-          if (me) {
-              await channelRef.current.track({ ...me, isReady: true });
-          }
+     // Robust tracking update
+     if (channelRef.current) {
+         await channelRef.current.track({
+             user_id: myUserId,
+             nickname: myNickname,
+             joined_at: joinTime,
+             isReady: true
+         });
      }
   };
 
   useEffect(() => {
+     // Start game when both are ready
      if (phase === 'ready' && opponentReady) {
          setPhase('playing');
          setIsMyTurn(myRole === 'host');
