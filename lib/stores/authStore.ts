@@ -14,6 +14,7 @@ interface AuthState {
   loginAsGuest: (nickname: string) => void;
   renameGuest: (newNickname: string) => void;
   resendVerification: (email: string) => Promise<void>;
+  verifyOtp: (email: string, token: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -186,6 +187,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       email: email,
     });
     if (error) throw error;
+  },
+
+  verifyOtp: async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+         // Same profile logic as login/register to be safe
+         let { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+         
+         if (!profile) {
+              const username = data.user.user_metadata?.username;
+              const newProfile = {
+                  id: data.user.id,
+                  username: username || `user_${data.user.id.slice(0, 8)}`,
+                  display_name: username || `User ${data.user.id.slice(0, 8)}`,
+              };
+              const { error: insertError } = await supabase.from('profiles').upsert(newProfile);
+              if (!insertError) profile = newProfile as Profile;
+         }
+
+         set({
+            user: {
+                id: data.user.id,
+                email: data.user.email,
+                profile: profile || undefined,
+                isGuest: false,
+            },
+            isGuest: false,
+         });
+    }
   },
 
   updateProfile: async (updates: Partial<Profile>) => {

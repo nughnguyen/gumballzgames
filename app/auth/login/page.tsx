@@ -83,20 +83,29 @@ export default function LoginPage() {
                   {error}
                 </div>
                 {error.includes('Email not confirmed') && (
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            try {
-                                await useAuthStore.getState().resendVerification(email);
-                                alert("Verification email sent! Please check your inbox.");
-                            } catch (e: any) {
-                                alert(e.message);
-                            }
-                        }}
-                        className="text-sm text-green-400 hover:text-green-300 underline text-center"
-                    >
-                        Resend Verification Email
-                    </button>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            type="button"
+                            onClick={() => router.push(`/auth/verify?email=${encodeURIComponent(email)}`)}
+                            className="text-sm text-blue-300 hover:text-blue-200 underline text-center font-semibold"
+                        >
+                            Enter Verification Code
+                        </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                try {
+                                    await useAuthStore.getState().resendVerification(email);
+                                    alert("Verification email sent! Please check your inbox.");
+                                } catch (e: any) {
+                                    alert(e.message);
+                                }
+                            }}
+                            className="text-xs text-green-400 hover:text-green-300 underline text-center"
+                        >
+                            Resend Verification Email
+                        </button>
+                    </div>
                 )}
               </div>
             )}

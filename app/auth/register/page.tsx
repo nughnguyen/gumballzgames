@@ -39,7 +39,17 @@ export default function RegisterPage() {
 
     try {
       await register(email, password, username);
-      router.push('/');
+      // If successful but no session, it means verify is needed
+      // But register function throws or logs us in.
+      // Wait, Supabase `signUp` returns session: null if email confirm is on.
+      // We need to check authStore state or handle it inside register.
+      // Actually `register` in authStore currently sets user state if data.user exists.
+      // If confirm is enabled, data.user is returned. data.session is null.
+      // AuthStore sets user state anyway. 
+      // Let's rely on checking if we are redirected or we can manually check.
+      // Better: redirect to /auth/verify?email=...
+      
+      router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
       setError(err.message || 'Failed to register');
     } finally {
