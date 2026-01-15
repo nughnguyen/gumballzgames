@@ -56,7 +56,7 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-[var(--border-primary)] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 flex items-center justify-center group-hover:opacity-80 transition-opacity">
+            <div className="w-20 h-20 flex items-center justify-center group-hover:opacity-80 transition-opacity">
               <img src="/logo.png" alt="GumballZ" className="w-full h-full object-contain" />
             </div>
             <div>
