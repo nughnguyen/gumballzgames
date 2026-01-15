@@ -191,3 +191,36 @@ textarea::placeholder {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Sprite Animation Keyframes (Assumes 4rem/64px frame size) */
+@keyframes sprite-scan-x {
+  from { background-position-x: 0rem; }
+  to { background-position-x: -20rem; }
+}
+
+@keyframes sprite-scan-y {
+  from { background-position-y: 0rem; }
+  to { background-position-y: -16rem; }
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 1; }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+}
+
+/* Explicit class to apply sprite animation with fixed parameters */
+.emoji-sprite-anim {
+  width: 4rem; 
+  height: 4rem;
+  background-size: 20rem 16rem; /* 5 cols, 4 rows */
+  background-repeat: no-repeat;
+  animation: 
+    sprite-scan-x 0.8s steps(5) infinite, /* speed of one row */
+    sprite-scan-y 3.2s steps(4) infinite; /* 4 * row_speed */
+}

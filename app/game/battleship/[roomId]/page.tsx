@@ -217,23 +217,30 @@ export default function BattleshipMultiplayerPage() {
       .on('presence', { event: 'join' }, ({ newPresences }) => {
           const joined = newPresences as unknown as PresenceState[];
           joined.forEach(u => {
-              if (u.sessionId !== sessionId) addLog(`${u.nickname} connected.`);
+              if (u.sessionId !== sessionId) {
+                   // Only log if we didn't already know about them or if it's significant
+                   addLog(`${u.nickname} entered the sector.`);
+              }
           });
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
           const left = leftPresences as unknown as PresenceState[];
           left.forEach(u => {
               if (u.sessionId !== sessionId) {
-                  addLog(`${u.nickname} disconnected.`);
+                  // Don't show disconnected immediately if they might just be reconnecting.
+                  // But we do need to handle game over if playing.
                   if (phase === 'playing') {
+                       // Strict disconnect handling during game
+                       addLog(`${u.nickname} lost signal.`);
+                       // Give a grace period? For now, keep instant win to avoid stuck games.
                        setPhase('gameover');
                        setWinner('me');
                        setImReady(false);
                        addLog("Opponent lost connection. You win!");
                        setIsMyTurn(false);
-                  } else if (phase === 'ready') {
-                       setOpponentReady(false);
-                       addLog("Opponent disconnected.");
+                  } else {
+                       // In lobby/setup, just log relevant info
+                       // addLog(`${u.nickname} disconnected.`); // Too spammy if flickering
                   }
               }
           });
@@ -639,7 +646,10 @@ export default function BattleshipMultiplayerPage() {
                      <div className="absolute -top-12 left-0 right-0 pointer-events-none flex justify-center items-end h-20 overflow-visible z-50">
                         {activeEmojis.filter(e => e.senderId === myUserId).map(emoji => (
                             <div key={emoji.id} className="animate-bounce-in absolute flex flex-col items-center">
-                                <img src={`/emoji/${emoji.emojiName}`} className="w-12 h-12 md:w-16 md:h-16 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)] filter brightness-125" alt="emoji" />
+                                <div 
+                                  className="emoji-sprite-anim drop-shadow-[0_0_10px_rgba(6,182,212,0.8)] filter brightness-125"
+                                  style={{ backgroundImage: `url(/emoji/${emoji.emojiName})` }}
+                                ></div>
                             </div>
                         ))}
                      </div>
@@ -692,8 +702,15 @@ export default function BattleshipMultiplayerPage() {
                  {isEmojiPickerOpen && (
                     <div className="bg-cyan-900/10 p-3 rounded-xl border border-cyan-500/20 flex flex-wrap justify-center gap-2 backdrop-blur-sm">
                         {AVAILABLE_EMOJIS.map(emoji => (
-                            <button key={emoji} onClick={() => handleSendEmoji(emoji)} className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors">
-                                <img src={`/emoji/${emoji}`} alt={emoji.split('.')[0]} className="w-8 h-8" />
+                            <button key={emoji} onClick={() => handleSendEmoji(emoji)} className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors group">
+                                <div
+                                  className="w-8 h-8 bg-no-repeat group-hover:scale-110 transition-transform"
+                                  style={{
+                                      backgroundImage: `url(/emoji/${emoji})`,
+                                      backgroundSize: '10rem 8rem', 
+                                      backgroundPosition: '0 0'
+                                  }}
+                                ></div>
                             </button>
                         ))}
                     </div>
@@ -735,15 +752,22 @@ export default function BattleshipMultiplayerPage() {
                         {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
                     </button>
                     
-                    {isEmojiPickerOpen && (
+                     {isEmojiPickerOpen && (
                         <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-64 bg-[#0D111F]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl z-[100] grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
                             {AVAILABLE_EMOJIS.map((emoji) => (
                                 <button
                                     key={emoji}
                                     onClick={() => handleSendEmoji(emoji)}
-                                    className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110"
+                                    className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
                                 >
-                                    <img src={`/emoji/${emoji}`} alt="emoji" className="w-full h-full object-contain" />
+                                     <div
+                                      className="w-8 h-8 bg-no-repeat"
+                                      style={{
+                                          backgroundImage: `url(/emoji/${emoji})`,
+                                          backgroundSize: '10rem 8rem', /* Matches w-8 (2rem) */
+                                          backgroundPosition: '0 0'
+                                      }}
+                                    ></div>
                                 </button>
                             ))}
                         </div>
@@ -760,14 +784,17 @@ export default function BattleshipMultiplayerPage() {
                        <i className="fi fi-rr-location-crosshairs"></i>
                     </h2>
                      
-                     {/* Opponent Emojis Overlay */}
-                     <div className="absolute -top-12 left-0 right-0 pointer-events-none flex justify-center items-end h-20 overflow-visible z-50">
+                      {/* Opponent Emojis Overlay */}
+                      <div className="absolute -top-12 left-0 right-0 pointer-events-none flex justify-center items-end h-20 overflow-visible z-50">
                         {activeEmojis.filter(e => e.senderId !== myUserId).map(emoji => (
                             <div key={emoji.id} className="animate-bounce-in absolute flex flex-col items-center">
-                                <img src={`/emoji/${emoji.emojiName}`} className="w-12 h-12 md:w-16 md:h-16 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] filter brightness-125" alt="emoji" />
+                                <div 
+                                  className="emoji-sprite-anim drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] filter brightness-125"
+                                  style={{ backgroundImage: `url(/emoji/${emoji.emojiName})` }}
+                                ></div>
                             </div>
                         ))}
-                     </div>
+                      </div>
                   </div>
                  
                  <div className="bg-[#0D111F]/90 p-4 rounded-xl border border-red-500/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] relative backdrop-blur-md w-full">
