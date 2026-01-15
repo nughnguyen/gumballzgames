@@ -21,7 +21,14 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/');
+      
+      // Check if email is confirmed
+      const user = useAuthStore.getState().user;
+      if (user && !user.emailConfirmedAt) {
+        router.push('/profile');
+      } else {
+        router.push('/');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {

@@ -75,6 +75,7 @@ export default function CaroBoard({ moves, onMove, currentPlayer, disabled }: Ca
     if (clickedOnce && clickedOnce.x === cellX && clickedOnce.y === cellY) {
       // Second click - place the move
       onMove(cellX, cellY);
+      new Audio('/sfx/place-sfx.mp3').play().catch(e => console.error("Audio play failed", e));
       setClickedOnce(null);
       setPreviewCell(null);
     } else {

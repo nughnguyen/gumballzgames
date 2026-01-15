@@ -216,8 +216,7 @@ export default function MemoryGameRoom() {
 
   const startGame = async () => {
     if (!isHost) return;
-    if (onlineUsers.length < 2) {
-        alert("Wait for an opponent!");
+    if (onlineUsers.length < 1) {
         return;
     }
 
@@ -250,7 +249,7 @@ export default function MemoryGameRoom() {
     };
 
     await broadcastState(newState);
-    broadcastLog("Game Started! Host's turn.");
+    broadcastLog("Game Started!");
   };
 
   const handleCardClick = async (index: number) => {
@@ -307,9 +306,15 @@ export default function MemoryGameRoom() {
                     phase = 'finished';
                     // Determine winner
                     const opponentId = Object.keys(newScores).find(id => id !== myUserId);
-                    if (opponentId && newScores[myUserId] > newScores[opponentId]) winner = myUserId;
-                    else if (opponentId && newScores[opponentId] > newScores[myUserId]) winner = opponentId;
-                    else winner = 'draw';
+                     if (onlineUsers.length === 1) {
+                         winner = myUserId; // Solo win
+                    } else if (opponentId) {
+                         if (newScores[myUserId] > newScores[opponentId]) winner = myUserId;
+                         else if (newScores[opponentId] > newScores[myUserId]) winner = opponentId;
+                         else winner = 'draw';
+                    } else {
+                         winner = myUserId; // Fallback
+                    }
                 }
 
                 const matchState: GameState = {

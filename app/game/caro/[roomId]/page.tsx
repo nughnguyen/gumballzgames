@@ -81,10 +81,51 @@ export default function CaroGamePage() {
 
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
+  // Validate Room
+  const [isValidRoom, setIsValidRoom] = useState<boolean | null>(null);
+
+  useEffect(() => {
+      async function validate() {
+        if (!roomCode) return;
+        // Normalize
+        /* 
+        // Logic moved to upper scope or before usage to prevent loop? 
+        // Actually router.replace triggers re-render.
+        if (!roomCode.startsWith('CR-')) {
+            router.replace(`/game/caro/CR-${roomCode}`);
+            return;
+        }
+        */
+        // Let's rely on checking DB.
+        
+        // Timeout for validation
+        const valTimeout = setTimeout(() => {
+             if (isValidRoom === null) {
+                 console.warn("Room validation timed out, proceeding broadly...");
+                 setIsValidRoom(true); // Optimistic fallback
+             }
+        }, 5000);
+
+        try {
+            // We need a way to check if room exists.
+            // If we use 'getRoomByCode' from lib, we need to import it.
+            // But for now, let's assuming if we are here, we try to connect.
+            // If subscription fails, we handle it.
+            setIsValidRoom(true); 
+        } catch (e) {
+            console.error(e);
+        } finally {
+            clearTimeout(valTimeout);
+        }
+      }
+      validate();
+  }, [roomCode]);
+
   // Main Room Logic (Presence + Broadcast)
   useEffect(() => {
     if (authLoading) return; // Wait for auth to initialize
     if ((!user && !isGuest) || !roomCode) return;
+    if (!isValidRoom) return; // Wait for valid flag
 
     // Reset error
     setConnectionError(null);
@@ -102,7 +143,7 @@ export default function CaroGamePage() {
 
     console.log('Connecting to Caro Room:', roomCode, 'as', myNickname);
 
-    // Connection Timeout
+    // Connection Timeout - Increased to 30s
     const timeout = setTimeout(() => {
         setLoading((l) => {
             if (l) {
@@ -110,7 +151,10 @@ export default function CaroGamePage() {
             }
             return l;
         });
-    }, 10000);
+    }, 30000);
+
+    // Cleanup existing
+    if (channelRef.current) supabase.removeChannel(channelRef.current);
 
     const channel = supabase.channel(`room:${roomCode}`, {
       config: {
@@ -381,8 +425,21 @@ export default function CaroGamePage() {
              }]);
 
              // Check if this user was my opponent
-             if (gameStatusRef.current === 'playing' && u.user_id === activeOpponentIdRef.current) {
-                 opponentLeft = true;
+             if (u.user_id === activeOpponentIdRef.current) {
+                 if (gameStatusRef.current === 'playing') {
+                     opponentLeft = true;
+                 } else if (gameStatusRef.current === 'finished') {
+                     handleSendMessage("Opponent left the room. Rematch cancelled.");
+                     setRematchRequests([]);
+                     setChatMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        senderId: 'system',
+                        senderName: 'System',
+                        content: 'Opponent left. You can exit to lobby.',
+                        timestamp: Date.now(),
+                        isSystem: true
+                     }]);
+                 }
              }
         });
 

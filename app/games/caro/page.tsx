@@ -32,72 +32,78 @@ export default function CaroPage() {
     }
   };
 
+  // Session ID for stable presence in matchmaking
+  const [sessionId] = useState(() => `sess-${Math.random().toString(36).substring(2, 9)}`);
+
   const handleQuickMatch = async () => {
      if (!user && !isGuest) {
          alert("Please login first or set a guest nickname on the home page.");
          return;
      }
-     
-     if (isSearching) return; // Prevent double click
+     if (isSearching) return;
      setIsSearching(true);
-     
-     const myId = user?.id || `guest-${Date.now()}`;
-     const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
-     
-     const channel = supabase.channel('matchmaking:caro', {
-        config: {
-            presence: {
-                key: myId,
-            }
-        }
-     });
-
-     channel
-        .on('presence', { event: 'sync' }, () => {
-             const state = channel.presenceState();
-             const others = Object.values(state).flat().filter((u:any) => u.user_id !== myId);
-             
-             if (others.length > 0) {
-                 const opponent = others[0] as any;
-                 
-                 if (myId > opponent.user_id) {
-                     const roomCode = generateRoomCode();
-                     // Must create db room for consistency now
-                     createRoom(roomCode, 'caro', myId, myNickname).then(room => {
-                        if(room) {
-                            channel.send({
-                                type: 'broadcast',
-                                event: 'match_found',
-                                payload: { target_id: opponent.user_id, roomCode }
-                            });
-                            router.push(`/game/caro/${roomCode}`);
-                        }
-                     });
-                 }
-             }
-        })
-        .on('broadcast', { event: 'match_found' }, ({ payload }) => {
-             if (payload.target_id === myId) {
-                  router.push(`/game/caro/${payload.roomCode}`);
-             }
-        })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                await channel.track({
-                    user_id: myId,
-                    nickname: myNickname,
-                    joined_at: new Date().toISOString()
-                });
-            }
-        });
-        
-    // Clean up channel? 
-    // Usually handled by router leaving the page, which unmounts component.
-    // However, if we stay on page (failed match), we are still subbed.
-    // Ideally we save 'channel' in a ref or state to unsubscribe on unmount.
-    // For this simple implementation, navigation handles the "unsubscribe" 
-    // because the component unmounts upon router.push.
   };
+  
+  useEffect(() => {
+     let channel: any = null;
+     if (isSearching) {
+        const myId = user?.id || `guest-${Date.now()}`;
+        const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
+        
+        channel = supabase.channel('matchmaking:caro', {
+             config: { presence: { key: sessionId } }
+        });
+   
+        channel
+           .on('presence', { event: 'sync' }, async () => {
+                const state = channel.presenceState();
+                const others = Object.values(state).flat().filter((u:any) => u.sessionId !== sessionId);
+                
+                if (others.length > 0) {
+                    const opponent = others[0] as any;
+
+                    // Tie-breaker: lexicographically larger sessionId creates the room
+                    if (sessionId > opponent.sessionId) {
+                         const roomCode = generateRoomCode(); // Generates CR-XXXX if implemented or just random
+                         // Ensure prefix if generateRoomCode doesn't add it (it usually just adds random chars)
+                         // But createRoom internally might expect or add it? 
+                         // Check generateRoomCode: it returns 6 chars. 
+                         // We should prefix it 'CR-'? No, createRoom does not prefix automatically for id usually, but for room_code yes.
+                         // Let's rely on standard ID flow.
+                         
+                         const fullCode = roomCode.startsWith('CR-') ? roomCode : `CR-${roomCode}`;
+                         await createRoom(fullCode, 'caro', myId, myNickname);
+
+                         await channel.send({
+                             type: 'broadcast',
+                             event: 'match_found',
+                             payload: { targetSessionId: opponent.sessionId, roomCode: fullCode }
+                         });
+                         router.push(`/game/caro/${fullCode}`);
+                    }
+                }
+           })
+           .on('broadcast', { event: 'match_found' }, ({ payload }) => {
+                if (payload.targetSessionId === sessionId) {
+                     router.push(`/game/caro/${payload.roomCode}`);
+                }
+           })
+           .subscribe(async (status: string) => {
+               if (status === 'SUBSCRIBED') {
+                   await channel.track({
+                       sessionId: sessionId,
+                       user_id: myId,
+                       nickname: myNickname,
+                       joined_at: new Date().toISOString()
+                   });
+               }
+           });
+     }
+     
+     return () => {
+         if (channel) supabase.removeChannel(channel);
+     };
+  }, [isSearching, user, isGuest, router, sessionId]);
 
   return (
     <div className="flex min-h-screen bg-primary">

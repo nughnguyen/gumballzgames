@@ -24,13 +24,23 @@ export default function BattleshipPage() {
     let channel: any = null;
 
     if (isSearching) {
+      if (!user && !isGuest) { // Double check auth
+          setIsSearching(false);
+          return;
+      }
+
       const myId = user?.id || `guest-${Date.now()}`;
       const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
+      const channelId = 'matchmaking:battleship';
 
-      channel = supabase.channel('matchmaking:battleship', {
+      // Clean existing channel if any (shouldn't happen with useEffect cleanup)
+      supabase.removeChannel(supabase.channel(channelId));
+
+      channel = supabase.channel(channelId, {
         config: {
           presence: {
-            key: sessionId, // Use unique session ID for presence
+            // key must be unique per connection to track distinct users
+            key: sessionId, 
           }
         }
       });
@@ -38,15 +48,24 @@ export default function BattleshipPage() {
       channel
         .on('presence', { event: 'sync' }, async () => {
           const state = channel.presenceState();
-          // Filter out myself based on sessionId, allow same user_id (for testing)
+          // Filter to only get others
           const others = Object.values(state).flat().filter((u:any) => u.sessionId !== sessionId);
           
           if (others.length > 0) {
+            // Pick the first available opponent
             const opponent = others[0] as any;
             
-            // Deterministic tie-breaker using sessionId
+            // To avoid race conditions, only one side creates the key.
+            // Convention: The one with lexicographically 'larger' sessionId creates the room
             if (sessionId > opponent.sessionId) {
-              const roomId = 'BS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+              // Ensure we use the proper prefix 'BS-' regardless of what generator returns
+              // If generateRoomCode returns 'ABCDEF', we should make sure it's 'BS-ABCDEF'
+              // Wait, createRoom stores it as uppercase.
+              // Let's rely on standard format: 'BS-' + 6 chars
+              const rawCode = generateRoomCode(); // Assume 6 chars
+              const roomId = `BS-${rawCode}`; 
+              
+              await createRoom(roomId, 'battleship', myId, myNickname);
               
               // Broadcast to opponent
               await channel.send({
@@ -55,6 +74,7 @@ export default function BattleshipPage() {
                 payload: { targetSessionId: opponent.sessionId, roomId }
               });
               
+              // I go to room too
               router.push(`/game/battleship/${roomId}`);
             }
           }

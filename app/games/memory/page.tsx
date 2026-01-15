@@ -94,6 +94,12 @@ export default function MemoryGamePage() {
                         >
                           Create Room
                         </button>
+                        <button
+                          onClick={handleCreateRoom}
+                          className="px-6 py-2.5 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--accent-green)] text-[var(--accent-green)] font-bold rounded-lg transition-all shadow-lg text-sm whitespace-nowrap"
+                        >
+                          Play Solo
+                        </button>
                         <div className="flex gap-2 flex-1 max-w-sm">
                              <input 
                                 type="text" 
