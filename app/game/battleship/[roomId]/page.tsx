@@ -114,7 +114,28 @@ export default function BattleshipMultiplayerPage() {
   };
   
   // State to track my own readiness so it persists in presence updates
+  // State to track my own readiness so it persists in presence updates
   const [imReady, setImReady] = useState(false);
+  const imReadyRef = useRef(imReady);
+
+  useEffect(() => {
+    imReadyRef.current = imReady;
+  }, [imReady]);
+
+  const trackPresence = async () => {
+     if (!channelRef.current) return;
+     const status = channelRef.current.state; 
+     // Supabase channel state isn't directly exposed as 'SUBSCRIBED' string simply, 
+     // but tracking is safe to call if channel exists, it queues changes.
+     
+     await channelRef.current.track({
+        sessionId: sessionId,
+        user_id: myUserId,
+        nickname: myNickname,
+        joined_at: joinTime,
+        isReady: imReadyRef.current
+     });
+  };
 
   useEffect(() => {
     if (authLoading || !isValidRoom || !roomId) return;
@@ -132,18 +153,10 @@ export default function BattleshipMultiplayerPage() {
     // Cleanup existing channel if re-running
     if(channelRef.current) supabase.removeChannel(channelRef.current);
 
-    const channel = supabase.channel(`room:${roomId}`, {
+     const channel = supabase.channel(`room:${roomId}`, {
       config: { presence: { key: sessionId } }
     });
     channelRef.current = channel;
-
-    const myPresence: PresenceState = {
-      sessionId: sessionId,
-      user_id: myUserId,
-      nickname: myNickname,
-      joined_at: joinTime,
-      isReady: imReady // Use state here
-    };
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -188,7 +201,6 @@ export default function BattleshipMultiplayerPage() {
                   if (phase === 'playing') {
                        setPhase('gameover');
                        setWinner('me');
-           setImReady(false);
                        setImReady(false);
                        addLog("Opponent lost connection. You win!");
                        setIsMyTurn(false);
@@ -204,15 +216,14 @@ export default function BattleshipMultiplayerPage() {
       .on('broadcast', { event: 'fire_result' }, ({ payload }) => handleFireResult(payload))
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
           setChatMessages(p => [...p, payload]);
-          if (payload.senderId !== (user?.id || 'guest')) { // Simple check, might need better logic if guest IDs overlap
-             // Play sound if not my message
+          if (payload.senderId !== (user?.id || 'guest')) { 
              new Audio('/sfx/new-message.webm').play().catch(e => console.error("Audio play failed", e));
           }
       })
       .on('broadcast', { event: 'restart' }, () => resetGame())
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track(myPresence);
+          await trackPresence();
           addLog("Secure channel established.");
         }
       });
@@ -221,20 +232,7 @@ export default function BattleshipMultiplayerPage() {
       clearInterval(hbInterval);
       supabase.removeChannel(channel);
     };
-  }, [roomId, isValidRoom, user, isGuest, authLoading, joinTime, myUserId, myNickname, sessionId]); // removed imReady dependency
-
-  // Separate effect to track readiness without reconnecting
-  useEffect(() => {
-    if (channelRef.current) {
-        channelRef.current.track({
-            sessionId: sessionId,
-            user_id: myUserId,
-            nickname: myNickname,
-            joined_at: joinTime,
-            isReady: imReady
-        }).catch((err: any) => console.error("Failed to track presence:", err));
-    }
-  }, [imReady, sessionId, myUserId, myNickname, joinTime]);
+  }, [roomId, isValidRoom, user, isGuest, authLoading, joinTime, myUserId, myNickname, sessionId]); 
 
   // Place Ships...
 
@@ -244,6 +242,17 @@ export default function BattleshipMultiplayerPage() {
      
      setPhase('ready');
      setImReady(true);
+     // Force immediate update via ref (useEffect will also catch it, but explicit calling ensures sync)
+     // Wait for next tick so ref updates? Actually ref updates in effect. 
+     // We should manually update ref here to be safe before calling trackPresence immediately if we wanted.
+     // But let's rely on the state update triggering the ref update.
+     
+     // Actually, we removed the separate effect! So we must call trackPresence here.
+     // And because state update is async, 'imReady' var in this scope is false.
+     // So we must pass true explicitly or update ref manually.
+     imReadyRef.current = true;
+     trackPresence();
+     
      addLog("Fleet locked. Uplinking status...");
   }; 
 
@@ -259,7 +268,10 @@ export default function BattleshipMultiplayerPage() {
     setWinner(null);
     setLogs(['System reset. Awaiting fleet deployment.']);
     setIsMyTurn(false);
-    setOpponentReady(false); // Reset opponent ready view until they sync
+    setOpponentReady(false); 
+    
+    imReadyRef.current = false;
+    trackPresence();
   }; 
 
   // --- GAME ACTIONS ---
