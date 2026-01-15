@@ -97,6 +97,7 @@ export interface ChessGameData {
 export interface User {
   id: string;
   email?: string;
+  emailConfirmedAt?: string | null;
   profile?: Profile;
   isGuest: boolean;
   guestNickname?: string;

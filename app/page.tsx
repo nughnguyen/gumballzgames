@@ -12,6 +12,7 @@ export default function HomePage() {
   const { user, isGuest, loginAsGuest, checkAuth, loading } = useAuthStore();
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [modalView, setModalView] = useState<'initial' | 'guest-input'>('initial');
   const [roomCode, setRoomCode] = useState('');
 
   useEffect(() => {
@@ -51,45 +52,98 @@ export default function HomePage() {
       {/* Guest Login Modal */}
       {showGuestModal && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-8 w-full max-w-md shadow-2xl">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[var(--border-primary)]">
-                <i className="fi fi-rr-gamepad text-5xl text-[var(--accent-green)]"></i>
-              </div>
-              <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-3">Welcome Player</h2>
-              <p className="text-[var(--text-secondary)]">Enter a nickname to join the action</p>
-            </div>
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-8 w-full max-w-md shadow-2xl relative overflow-hidden">
             
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <i className="fi fi-rr-user text-[var(--text-tertiary)]"></i>
-                </div>
-                <input
-                  type="text"
-                  value={guestNickname}
-                  onChange={(e) => setGuestNickname(e.target.value)}
-                  placeholder="Nickname (min 3 chars)"
-                  className="w-full pl-12 pr-4 py-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] transition-all"
-                  onKeyPress={(e) => e.key === 'Enter' && handleGuestLogin()}
-                  autoFocus
-                />
-              </div>
-              
-              <button
-                onClick={handleGuestLogin}
-                disabled={guestNickname.trim().length < 3}
-                className="w-full py-4 bg-[var(--accent-green)] hover:brightness-110 text-white font-bold rounded-xl transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Start Playing <i className="fi fi-rr-arrow-right"></i>
-              </button>
-
-              <div className="text-center pt-4 border-t border-[var(--border-secondary)]">
-                <Link href="/auth/login" className="text-[var(--accent-green)] hover:underline font-medium text-sm flex items-center justify-center gap-2">
-                  <i className="fi fi-rr-sign-in-alt"></i> or Login with Account
-                </Link>
-              </div>
+            {/* Background Decoration */}
+            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                <i className="fi fi-rr-gamepad text-9xl"></i>
             </div>
+
+            {modalView === 'initial' ? (
+              <div className="relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-[var(--accent-green)] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-900/20">
+                    <i className="fi fi-rr-gamepad text-4xl text-white"></i>
+                  </div>
+                  <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Welcome to WebGames</h2>
+                  <p className="text-[var(--text-secondary)]">Join the community or play freely</p>
+                </div>
+
+                <div className="space-y-3">
+                  <Link 
+                    href="/auth/login"
+                    className="flex items-center justify-center gap-3 w-full p-4 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--accent-green)] text-[var(--text-primary)] rounded-xl font-semibold transition-all group"
+                  >
+                    <i className="fi fi-rr-sign-in-alt text-xl group-hover:text-[var(--accent-green)] transition-colors"></i>
+                    <span>Log In</span>
+                  </Link>
+
+                  <Link 
+                    href="/auth/register"
+                    className="flex items-center justify-center gap-3 w-full p-4 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--accent-green)] text-[var(--text-primary)] rounded-xl font-semibold transition-all group"
+                  >
+                    <i className="fi fi-rr-user-add text-xl group-hover:text-[var(--accent-green)] transition-colors"></i>
+                    <span>Create Account</span>
+                  </Link>
+
+                  <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-[var(--border-secondary)]"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-[var(--bg-secondary)] px-4 text-xs text-[var(--text-tertiary)] uppercase font-bold tracking-wider">or</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setModalView('guest-input')}
+                    className="flex items-center justify-center gap-3 w-full p-4 bg-[var(--accent-green)] hover:bg-opacity-90 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-900/20 hover:scale-[1.02]"
+                  >
+                    <i className="fi fi-rr-user-secret text-xl"></i>
+                    <span>Play as Guest</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative z-10 animate-in fade-in slide-in-from-right-8 duration-300">
+                <button 
+                  onClick={() => setModalView('initial')}
+                  className="absolute -top-2 -left-2 p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-full transition-all"
+                >
+                  <i className="fi fi-rr-arrow-small-left text-2xl"></i>
+                </button>
+
+                <div className="text-center mb-8 pt-4">
+                  <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Guest Access</h2>
+                  <p className="text-[var(--text-secondary)]">Choose a display name</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <i className="fi fi-rr-user text-[var(--text-tertiary)]"></i>
+                    </div>
+                    <input
+                      type="text"
+                      value={guestNickname}
+                      onChange={(e) => setGuestNickname(e.target.value)}
+                      placeholder="Nickname (min 3 chars)"
+                      className="w-full pl-12 pr-4 py-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] transition-all outline-none"
+                      onKeyPress={(e) => e.key === 'Enter' && handleGuestLogin()}
+                      autoFocus
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={handleGuestLogin}
+                    disabled={guestNickname.trim().length < 3}
+                    className="w-full py-4 bg-[var(--accent-green)] hover:brightness-110 text-white font-bold rounded-xl transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.02]"
+                  >
+                    Start Playing <i className="fi fi-rr-arrow-right"></i>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

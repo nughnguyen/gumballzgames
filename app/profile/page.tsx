@@ -53,6 +53,20 @@ export default function ProfilePage() {
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-2xl mx-auto">
+          {/* Email Verification Warning */}
+          {!isGuest && user && !user.emailConfirmedAt && (
+            <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3">
+              <i className="fi fi-rr-exclamation text-yellow-500 mt-1"></i>
+              <div>
+                <h3 className="font-bold text-yellow-500">Please Verify Your Email</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  We've sent a verification link to <strong>{user.email}</strong>. 
+                  Please check your inbox to complete your registration.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-[var(--bg-secondary)] rounded-xl flex items-center justify-center text-[var(--accent-green)] border border-[var(--border-primary)]">

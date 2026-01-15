@@ -64,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: {
             id: data.user.id,
             email: data.user.email,
+            emailConfirmedAt: data.user.email_confirmed_at,
             profile: profile || undefined,
             isGuest: false,
           },
@@ -133,6 +134,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: {
             id: data.user.id,
             email: data.user.email,
+            emailConfirmedAt: data.user.email_confirmed_at,
             profile: profile || undefined,
             isGuest: false,
           },
@@ -240,6 +242,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: {
                 id: data.user.id,
                 email: data.user.email,
+                emailConfirmedAt: data.user.email_confirmed_at,
                 profile: profile || undefined,
                 isGuest: false,
             },
@@ -290,6 +293,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: {
           id: session.user.id,
           email: session.user.email,
+          emailConfirmedAt: session.user.email_confirmed_at,
           profile: profile || undefined,
           isGuest: false,
         },
