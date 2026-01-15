@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WebGames - Play Caro, Battleship & Chess Online",
-  description: "Modern realtime multiplayer web game platform featuring Caro (Gomoku), Battleship, and Chess. Play with friends instantly!",
+  title: "GumballZ - WebGames - Play Caro, Battleship & Chess Online",
+  description: "Modern realtime multiplayer web game from GumballZ System featuring Caro, Battleship, and Chess. Play with friends instantly!",
 };
 
 export default function RootLayout({

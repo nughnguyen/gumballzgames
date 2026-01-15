@@ -449,6 +449,8 @@ export default function CaroGamePage() {
              setGameStatus('finished');
              setShowEndModal(true);
              
+             new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
+             
              handleSendMessage("Opponent disconnected. You win!");
              
              // Save history (Since opponent is gone, I am responsible)
@@ -487,6 +489,12 @@ export default function CaroGamePage() {
         if (newWinner) {
             setWinner(newWinner);
             setShowEndModal(true);
+            
+            if (newWinner === mySymbolRef.current) {
+                new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
+            } else {
+                new Audio('/sfx/defeat.webm').play().catch(e => console.error("Audio play failed", e));
+            }
         }
         if (newStatus) setGameStatus(newStatus);
         if (newRequests) setRematchRequests(newRequests);
@@ -583,6 +591,12 @@ export default function CaroGamePage() {
       setGameStatus('finished');
       setShowEndModal(true);
 
+      if (finalWinner === mySymbol) {
+         new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
+      } else {
+         new Audio('/sfx/defeat.webm').play().catch(e => console.error("Audio play failed", e));
+      }
+
       // Save History
       if (mySymbol === finalWinner) {
           const sortedUsers = [...onlineUsers].sort((a, b) => 
@@ -621,6 +635,8 @@ export default function CaroGamePage() {
     setWinner(actualWinner);
     setGameStatus('finished');
     setShowEndModal(true);
+
+    new Audio('/sfx/defeat.webm').play().catch(e => console.error("Audio play failed", e));
 
     // Broadcast surrender
     await channelRef.current?.send({

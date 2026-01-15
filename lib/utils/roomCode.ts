@@ -2,7 +2,7 @@
  * Generate a random 6-character room code
  */
 export function generateRoomCode(): string {
-  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude similar looking characters
+  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789'; // Exclude similar looking characters
   let code = '';
   
   for (let i = 0; i < 6; i++) {

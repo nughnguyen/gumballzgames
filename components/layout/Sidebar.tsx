@@ -56,12 +56,12 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-[var(--border-primary)] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-[var(--accent-green)] rounded-lg flex items-center justify-center group-hover:opacity-80 transition-opacity">
-              <i className="fi fi-rr-gamepad text-2xl text-white"></i>
+            <div className="w-12 h-12 flex items-center justify-center group-hover:opacity-80 transition-opacity">
+              <img src="/logo.png" alt="GumballZ" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[var(--text-primary)]">WebGames</h1>
-              <p className="text-xs text-[var(--text-tertiary)]">Play & Win</p>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">GumballZ</h1>
+              <p className="text-xs text-[var(--text-tertiary)]">Entertainment Platform</p>
             </div>
           </Link>
           

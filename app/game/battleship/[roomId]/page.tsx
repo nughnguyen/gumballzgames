@@ -237,6 +237,7 @@ export default function BattleshipMultiplayerPage() {
                        setWinner('me');
                        setImReady(false);
                        addLog("Opponent lost connection. You win!");
+                       new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
                        setIsMyTurn(false);
                   } else {
                        // In lobby/setup, just log relevant info
@@ -398,6 +399,7 @@ export default function BattleshipMultiplayerPage() {
           setWinner('opponent');
           setImReady(false);
           addLog("HULL BREACH CRITICAL. ABANDON SHIP!");
+          new Audio('/sfx/defeat.webm').play().catch(e => console.error("Audio play failed", e));
      } else {
         if (!isHit) {
             setIsMyTurn(true);
@@ -431,6 +433,7 @@ export default function BattleshipMultiplayerPage() {
           setWinner('me');
           setImReady(false);
           addLog("TARGET DESTROYED. VICTORY CONFIRMED.");
+          new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
           setIsMyTurn(false);
       } else {
           if (isHit) {
