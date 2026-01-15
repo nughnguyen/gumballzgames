@@ -175,10 +175,11 @@ export default function MemoryGameRoom() {
         }
       });
 
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-      setOnlineUsers([]); // Clear users on cleanup
-    };
+      return () => {
+        supabase.removeChannel(channel);
+        channelRef.current = null;
+        setOnlineUsers([]); // Clear users on cleanup
+      };
   }, [roomId, authLoading, sessionId, myUserId, myNickname, joinTime]);
 
   useEffect(() => {
@@ -392,7 +393,7 @@ export default function MemoryGameRoom() {
              <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
                <div>
                   <h1 className="text-xl font-bold flex items-center gap-2">
-                    <span className="text-2xl">🎴</span>
+                    <i className="fi fi-rr-puzzle-alt text-2xl"></i>
                     Memory Game
                   </h1>
                   <div className="flex items-center gap-4 text-sm mt-1">

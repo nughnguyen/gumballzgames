@@ -140,23 +140,7 @@ export default function CaroGamePage() {
         else if (p2?.user_id === myPresenceId) setMySymbol('O');
         else setMySymbol(null); 
         
-        // --- Heartbeat Logic ---
-        // If I am the host (p1) OR if I'm just a participant, I should signal activity.
-        // To reduce DB writes, maybe only the Host sends heartbeats?
-        // But if Host leaves, the Guest becomes the "keeper".
-        // Simplest: The "Host" (sortedUsers[0]) sends the heartbeat.
-        if (sortedUsers[0]?.user_id === myPresenceId) {
-             // I am the "Maintainer" of the room
-             if (room) { // We need 'room' object ID to update DB. 'roomCode' isn't the primary key?
-                 // Wait, updateRoomHeartbeat uses 'id'. Do we have room.id?
-                 // The page params gives us 'roomId' which is actually the CODE (e.g. AB12CD).
-                 // Our update cleanup function in rooms.ts uses 'id'. 
-                 // We need to fetch the room ID or change updateRoomHeartbeat to use 'room_code'.
-                 // Let's assume updateRoomHeartbeat needs 'id'.
-                 // We probably don't have the numeric ID here unless we fetched it.
-                 // Checking getRoomByCode in Page... it maps code -> room. 
-             }
-        }
+
         // Let's fix updateRoomHeartbeat to use room_code first in next step or now.
         // Actually, let's make updateRoomHeartbeat take roomCode.
         
@@ -694,7 +678,10 @@ export default function CaroGamePage() {
             <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
                <div>
                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold text-[var(--text-primary)]">Caro</h1>
+                    <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <i className="fi fi-rr-chess-knight-alt text-2xl"></i>
+                        Caro
+                    </h1>
                     
                     {/* Copy Link Button */}
                     <button 

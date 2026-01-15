@@ -39,7 +39,7 @@ export default function MemoryGamePage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-[var(--text-primary)] mb-3 flex items-center gap-4">
-              <span className="text-6xl">🎴</span>
+              <i className="fi fi-rr-puzzle-alt text-6xl"></i>
               Memory Game
             </h1>
             <p className="text-[var(--text-secondary)] text-lg">

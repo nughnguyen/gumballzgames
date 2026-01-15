@@ -127,7 +127,7 @@ export default function BattleshipPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-text-primary mb-3 flex items-center gap-4">
-              <span className="text-6xl">⚓</span>
+              <i className="fi fi-rr-puzzle-alt text-6xl"></i>
               Battleship
             </h1>
             <p className="text-text-secondary text-lg">

@@ -29,7 +29,7 @@ export default function UnoPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-text-primary mb-3 flex items-center gap-4">
-              <span className="text-6xl">🃏</span>
+              <i className="fi fi-rr-playing-cards text-6xl"></i>
               Uno
             </h1>
             <p className="text-text-secondary text-lg">
@@ -47,7 +47,7 @@ export default function UnoPage() {
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              🎮 Play
+              <i className="fi fi-rr-gamepad mr-2"></i> Play
             </button>
             <button
               onClick={() => setActiveTab('howto')}
@@ -57,11 +57,12 @@ export default function UnoPage() {
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              📖 How to Play
+              <i className="fi fi-rr-book-alt mr-2"></i> How to Play
             </button>
           </div>
 
           {/* Play Tab */}
+          {/* PLAY TAB */}
           {activeTab === 'play' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
@@ -71,8 +72,8 @@ export default function UnoPage() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                          <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                            <span className="text-2xl">👥</span>
-                            Multiplayer (Up to 4)
+                            <i className="fi fi-rr-users-alt text-2xl"></i>
+                            Play with Friends
                          </h3>
                          <div className="text-accent-green text-xs font-bold bg-accent-green/10 px-2 py-1 rounded md:hidden">
                             Online
@@ -117,6 +118,26 @@ export default function UnoPage() {
                 </div>
               </div>
 
+              {/* Quick Match - ADDED */}
+              <div className="bg-secondary/80 border border-border-primary rounded-lg p-5 hover:border-accent-orange transition-all shadow-lg backdrop-blur-sm flex flex-col justify-between">
+                <div>
+                    <h3 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
+                      <i className="fi fi-rr-bolt text-2xl text-[var(--accent-orange)]"></i>
+                      Quick Match
+                    </h3>
+                    <p className="text-text-secondary text-sm mb-3">
+                      Find a random game immediately.
+                    </p>
+                </div>
+                <button
+                    disabled
+                    className="w-full py-2.5 bg-accent-orange/50 cursor-not-allowed text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 text-sm"
+                >
+                    <i className="fi fi-rr-clock"></i>
+                    Coming Soon
+                </button>
+              </div>
+
             </div>
           )}
 
@@ -124,14 +145,14 @@ export default function UnoPage() {
           {activeTab === 'howto' && (
             <div className="space-y-6 text-text-primary">
               <div className="bg-white/5 border border-border-primary rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-accent-green mb-4">🎯 Objective</h3>
+                <h3 className="text-2xl font-bold text-accent-green mb-4 flex items-center gap-2"><i className="fi fi-rr-bullseye"></i> Objective</h3>
                 <p className="text-text-secondary text-lg">
                   Be the first player to get rid of all your cards.
                 </p>
               </div>
 
               <div className="bg-white/5 border border-border-primary rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-text-primary mb-4">🕹️ Rules</h3>
+                <h3 className="text-2xl font-bold text-text-primary mb-4 flex items-center gap-2"><i className="fi fi-rr-list-check"></i> Rules</h3>
                 <ul className="space-y-3 text-text-secondary list-disc pl-5">
                   <li>Match the top card on the discard pile by <strong>color</strong> or <strong>number</strong>.</li>
                   <li>Use <strong>Action Cards</strong> (Skip, Reverse, Draw 2) to hinder opponents.</li>

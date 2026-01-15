@@ -10,7 +10,7 @@ export default function ChessPage() {
       <main className="flex-1 p-8 flex items-center justify-center">
         <div className="text-center max-w-lg">
           <div className="w-24 h-24 bg-[var(--bg-tertiary)] rounded-3xl flex items-center justify-center mx-auto mb-6 text-[var(--accent-blue)] border border-[var(--border-primary)] shadow-2xl">
-            <i className="fi fi-rr-chess-piece text-5xl"></i>
+            <i className="fi fi-rr-chess-knight-alt text-5xl"></i>
           </div>
           <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-4">Chess</h1>
           <p className="text-[var(--text-secondary)] text-lg mb-8">

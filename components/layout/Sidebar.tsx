@@ -57,7 +57,7 @@ export default function Sidebar() {
         <div className="p-6 border-b border-[var(--border-primary)] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-12 h-12 bg-[var(--accent-green)] rounded-lg flex items-center justify-center group-hover:opacity-80 transition-opacity">
-              <span className="text-2xl">♟</span>
+              <i className="fi fi-rr-gamepad text-2xl text-white"></i>
             </div>
             <div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">WebGames</h1>
@@ -112,7 +112,7 @@ export default function Sidebar() {
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <span className="text-2xl">🎯</span>
+                  <i className="fi fi-rr-chess-knight-alt text-2xl"></i>
                   <span className="font-semibold">Caro</span>
                 </Link>
                 
@@ -125,7 +125,7 @@ export default function Sidebar() {
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <span className="text-2xl">⚓</span>
+                  <i className="fi fi-rr-puzzle-alt text-2xl"></i>
                   <span className="font-semibold">Battleship</span>
                 </Link>
                 
@@ -139,7 +139,7 @@ export default function Sidebar() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">♟️</span>
+                    <i className="fi fi-rr-chess-knight-alt text-2xl"></i>
                     <span className="font-semibold">Chess</span>
                   </div>
                   <span className="text-xs bg-[var(--accent-orange)] px-2 py-0.5 rounded text-white">Soon</span>
@@ -154,20 +154,20 @@ export default function Sidebar() {
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <span className="text-2xl">🎴</span>
+                  <i className="fi fi-rr-puzzle-alt text-2xl"></i>
                   <span className="font-semibold">Memory Game</span>
                 </Link>
 
                 {/* Uno - New! */}
                 <Link
-                  href="/game/uno"
+                  href="/games/uno"
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                    pathname === '/game/uno'
+                    pathname === '/games/uno'
                       ? 'bg-[var(--board-dark)] text-white'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  <span className="text-2xl">🃏</span>
+                  <i className="fi fi-rr-playing-cards text-2xl"></i>
                   <span className="font-semibold">Uno</span>
                 </Link>
               </div>

@@ -249,6 +249,7 @@ export default function UnoRoomPage() {
                         {/* Title Card */}
                         <div className="text-center animate-fade-in">
                             <h1 className="text-6xl font-bold mb-2 flex items-center justify-center gap-4">
+                                <i className="fi fi-rr-playing-cards text-6xl text-[var(--text-primary)]"></i>
                                 <span className="text-red-500">U</span>
                                 <span className="text-yellow-500">N</span>
                                 <span className="text-green-500">O</span>
@@ -421,7 +422,10 @@ export default function UnoRoomPage() {
                 <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-20 shadow-md">
                     <div>
                         <div className="flex items-center gap-2">
-                             <h1 className="text-xl font-bold">Uno</h1>
+                             <h1 className="text-xl font-bold flex items-center gap-2">
+                                <i className="fi fi-rr-playing-cards text-2xl"></i>
+                                Uno
+                             </h1>
                              
                              <button 
                                 onClick={() => {

@@ -404,7 +404,10 @@ export default function BattleshipMultiplayerPage() {
              <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
                <div>
                   <div className="flex items-center gap-2">
-                     <h1 className="text-xl font-bold">Battleship</h1>
+                     <h1 className="text-xl font-bold flex items-center gap-2">
+                       <i className="fi fi-rr-puzzle-alt text-2xl"></i>
+                       Battleship
+                     </h1>
                      
                      <button 
                         onClick={() => {
