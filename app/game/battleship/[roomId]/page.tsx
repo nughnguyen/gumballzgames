@@ -188,6 +188,8 @@ export default function BattleshipMultiplayerPage() {
                   if (phase === 'playing') {
                        setPhase('gameover');
                        setWinner('me');
+           setImReady(false);
+                       setImReady(false);
                        addLog("Opponent lost connection. You win!");
                        setIsMyTurn(false);
                   } else if (phase === 'ready') {
@@ -200,8 +202,14 @@ export default function BattleshipMultiplayerPage() {
       // ... fire events ...
       .on('broadcast', { event: 'fire' }, ({ payload }) => handleIncomingFire(payload.x, payload.y))
       .on('broadcast', { event: 'fire_result' }, ({ payload }) => handleFireResult(payload))
-      .on('broadcast', { event: 'chat' }, ({ payload }) => setChatMessages(p => [...p, payload]))
-      .on('broadcast', { event: 'restart' }, () => window.location.reload())
+      .on('broadcast', { event: 'chat' }, ({ payload }) => {
+          setChatMessages(p => [...p, payload]);
+          if (payload.senderId !== (user?.id || 'guest')) { // Simple check, might need better logic if guest IDs overlap
+             // Play sound if not my message
+             new Audio('/sfx/new-message.webm').play().catch(e => console.error("Audio play failed", e));
+          }
+      })
+      .on('broadcast', { event: 'restart' }, () => resetGame())
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track(myPresence);
@@ -213,7 +221,20 @@ export default function BattleshipMultiplayerPage() {
       clearInterval(hbInterval);
       supabase.removeChannel(channel);
     };
-  }, [roomId, isValidRoom, user, isGuest, authLoading, joinTime, myUserId, myNickname, sessionId, imReady]); // Add imReady dependency
+  }, [roomId, isValidRoom, user, isGuest, authLoading, joinTime, myUserId, myNickname, sessionId]); // removed imReady dependency
+
+  // Separate effect to track readiness without reconnecting
+  useEffect(() => {
+    if (channelRef.current) {
+        channelRef.current.track({
+            sessionId: sessionId,
+            user_id: myUserId,
+            nickname: myNickname,
+            joined_at: joinTime,
+            isReady: imReady
+        }).catch((err: any) => console.error("Failed to track presence:", err));
+    }
+  }, [imReady, sessionId, myUserId, myNickname, joinTime]);
 
   // Place Ships...
 
@@ -222,8 +243,23 @@ export default function BattleshipMultiplayerPage() {
      if (placedShips.length !== SHIPS.length) return;
      
      setPhase('ready');
-     setImReady(true); // Update state to trigger useEffect re-track
+     setImReady(true);
      addLog("Fleet locked. Uplinking status...");
+  }; 
+
+  const resetGame = () => {
+    setPhase('placement');
+    setMyGrid(createEmptyGrid());
+    setMyRadar(createEmptyGrid());
+    setPlacedShips([]);
+    setSelectedShip(SHIPS[0]);
+    setOrientation('horizontal');
+    setHoveredCells([]);
+    setImReady(false);
+    setWinner(null);
+    setLogs(['System reset. Awaiting fleet deployment.']);
+    setIsMyTurn(false);
+    setOpponentReady(false); // Reset opponent ready view until they sync
   }; 
 
   // --- GAME ACTIONS ---
@@ -311,6 +347,7 @@ export default function BattleshipMultiplayerPage() {
      if (amIDead) {
           setPhase('gameover');
           setWinner('opponent');
+          setImReady(false);
           addLog("HULL BREACH CRITICAL. ABANDON SHIP!");
      } else {
         if (!isHit) {
@@ -343,11 +380,12 @@ export default function BattleshipMultiplayerPage() {
       if (gameOver) {
           setPhase('gameover');
           setWinner('me');
+          setImReady(false);
           addLog("TARGET DESTROYED. VICTORY CONFIRMED.");
           setIsMyTurn(false);
       } else {
           if (isHit) {
-             new Audio('/sfx/hit-sfx.mp3').play().catch(e => console.error("Audio play failed", e));
+             new Audio('/sfx/hit-sfx.webm').play().catch(e => console.error("Audio play failed", e));
              addLog(`DIRECT HIT at ${String.fromCharCode(65+x)}${y+1}! Main batteries reloading...`);
              setIsMyTurn(true); // Hit = Shoot again rule
           } else {
@@ -599,7 +637,7 @@ export default function BattleshipMultiplayerPage() {
                          <p className={`text-sm font-bold tracking-widest ${winner === 'me' ? 'text-green-300' : 'text-red-400'}`}>
                              {winner === 'me' ? 'VICTORY' : 'DEFEATED'}
                          </p>
-                         <button onClick={() => window.location.reload()} className="mt-2 px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] uppercase tracking-wider">Re-Initialize</button>
+                         <button onClick={resetGame} className="mt-2 px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] uppercase tracking-wider">Re-Initialize</button>
                      </div>
                  )}
              </div>
