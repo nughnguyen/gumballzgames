@@ -24,6 +24,27 @@ interface PresenceState {
   isReady?: boolean;
 }
 
+interface ActiveEmoji {
+  id: string;
+  senderId: string;
+  emojiName: string;
+  timestamp: number;
+}
+
+const AVAILABLE_EMOJIS = [
+    '20250405emoticons-SheetAngry.png', '20250405emoticons-SheetCant.png', '20250405emoticons-SheetCome.png',
+    '20250405emoticons-SheetCrying.png', '20250405emoticons-SheetCute.png', '20250405emoticons-SheetDizzy.png',
+    '20250405emoticons-SheetDown.png', '20250405emoticons-SheetDrooling.png', '20250405emoticons-SheetEager.png',
+    '20250405emoticons-SheetExclamation.png', '20250405emoticons-SheetFrustrated.png', '20250405emoticons-SheetHeadblown.png',
+    '20250405emoticons-SheetIdea.png', '20250405emoticons-SheetKissing.png', '20250405emoticons-SheetLaughing.png',
+    '20250405emoticons-SheetLeft.png', '20250405emoticons-SheetLit.png', '20250405emoticons-SheetLove.png',
+    '20250405emoticons-SheetNeutral.png', '20250405emoticons-SheetNo.png', '20250405emoticons-SheetOMG.png',
+    '20250405emoticons-SheetOk.png', '20250405emoticons-SheetQuestion.png', '20250405emoticons-SheetRight.png',
+    '20250405emoticons-SheetSilence.png', '20250405emoticons-SheetSleepy.png', '20250405emoticons-SheetSpeechless.png',
+    '20250405emoticons-SheetSweat.png', '20250405emoticons-SheetThinking.png', '20250405emoticons-SheetTongue.png',
+    '20250405emoticons-SheetYes.png', '20250405emoticons-Sheetup.png'
+];
+
 export default function BattleshipMultiplayerPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,9 +72,11 @@ export default function BattleshipMultiplayerPage() {
   const [opponentReady, setOpponentReady] = useState(false);
   const [logs, setLogs] = useState<string[]>(['Initializing secure connection...']);
   
-  // Chat
+  // Chat & Emoji
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeEmojis, setActiveEmojis] = useState<ActiveEmoji[]>([]);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   // Refs
   const channelRef = useRef<any>(null);
@@ -223,6 +246,9 @@ export default function BattleshipMultiplayerPage() {
           if (payload.senderId !== (user?.id || 'guest')) { 
              new Audio('/sfx/new-message.webm').play().catch(e => console.error("Audio play failed", e));
           }
+      })
+      .on('broadcast', { event: 'emoji' }, ({ payload }) => {
+          handleIncomingEmoji(payload);
       })
       .on('broadcast', { event: 'restart' }, () => resetGame())
       .subscribe(async (status) => {
@@ -428,6 +454,30 @@ export default function BattleshipMultiplayerPage() {
      });
   };
 
+  const handleIncomingEmoji = (payload: ActiveEmoji) => {
+      setActiveEmojis(prev => [...prev, payload]);
+      setTimeout(() => {
+          setActiveEmojis(prev => prev.filter(e => e.id !== payload.id));
+      }, 3000);
+  };
+
+  const handleSendEmoji = async (emojiName: string) => {
+      const newEmoji: ActiveEmoji = {
+          id: Math.random().toString(36).substr(2, 9),
+          senderId: myUserId,
+          emojiName,
+          timestamp: Date.now()
+      };
+      
+      handleIncomingEmoji(newEmoji); // Show locally
+      await channelRef.current.send({
+          type: 'broadcast',
+          event: 'emoji',
+          payload: newEmoji
+      });
+      setIsEmojiPickerOpen(false);
+  };
+
   const handleExit = () => router.push('/games/battleship');
 
   // --- RENDER ---
@@ -573,7 +623,7 @@ export default function BattleshipMultiplayerPage() {
              
              {/* Left: My Fleet (Cyan) */}
              <div className="flex-1 w-full max-w-xl flex flex-col gap-2 flex-grow">
-                 <div className="flex justify-between items-center px-4 py-2 bg-gradient-to-r from-cyan-900/40 to-transparent rounded-lg border-l-4 border-cyan-500">
+                 <div className="flex justify-between items-center px-4 py-2 bg-gradient-to-r from-cyan-900/40 to-transparent rounded-lg border-l-4 border-cyan-500 relative">
                     <h2 className="text-lg font-bold flex items-center gap-3 text-cyan-300 tracking-wider">
                       <i className="fi fi-rr-shield-check"></i>
                       MY FLEET
@@ -584,7 +634,16 @@ export default function BattleshipMultiplayerPage() {
                              <button onClick={resetPlacement} className="text-[10px] px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded uppercase tracking-wider transition-all">Clr</button>
                         </div>
                     )}
-                 </div>
+                     
+                     {/* My Emojis Overlay */}
+                     <div className="absolute -top-12 left-0 right-0 pointer-events-none flex justify-center items-end h-20 overflow-visible z-50">
+                        {activeEmojis.filter(e => e.senderId === myUserId).map(emoji => (
+                            <div key={emoji.id} className="animate-bounce-in absolute flex flex-col items-center">
+                                <img src={`/emoji/${emoji.emojiName}`} className="w-12 h-12 md:w-16 md:h-16 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)] filter brightness-125" alt="emoji" />
+                            </div>
+                        ))}
+                     </div>
+                  </div>
                  
                  <div className="bg-[#0D111F]/80 p-4 rounded-xl border border-cyan-500/30 shadow-[0_0_40px_rgba(6,182,212,0.1)] relative backdrop-blur-md w-full">
                      <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-cyan-500/50 rounded-tl-sm"></div>
@@ -630,6 +689,16 @@ export default function BattleshipMultiplayerPage() {
                      </div>
                  )}
 
+                 {isEmojiPickerOpen && (
+                    <div className="bg-cyan-900/10 p-3 rounded-xl border border-cyan-500/20 flex flex-wrap justify-center gap-2 backdrop-blur-sm">
+                        {AVAILABLE_EMOJIS.map(emoji => (
+                            <button key={emoji} onClick={() => handleSendEmoji(emoji)} className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors">
+                                <img src={`/emoji/${emoji}`} alt={emoji.split('.')[0]} className="w-8 h-8" />
+                            </button>
+                        ))}
+                    </div>
+                 )}
+
                  {phase === 'waiting' && (
                      <div className="p-4 text-center bg-cyan-900/10 border border-cyan-500/20 rounded-xl">
                          <i className="fi fi-rr-satellite-dish animate-pulse text-2xl text-cyan-400 mb-2 inline-block"></i>
@@ -656,17 +725,50 @@ export default function BattleshipMultiplayerPage() {
                          <button onClick={resetGame} className="mt-2 px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] uppercase tracking-wider">Re-Initialize</button>
                      </div>
                  )}
+                 
+                 {/* Emoji Picker Button (Desktop) */}
+                 <div className="relative z-50 flex justify-center mt-2">
+                    <button 
+                        onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 text-yellow-500 border border-yellow-500/50 flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+                    >
+                        {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
+                    </button>
+                    
+                    {isEmojiPickerOpen && (
+                        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-64 bg-[#0D111F]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl z-[100] grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            {AVAILABLE_EMOJIS.map((emoji) => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => handleSendEmoji(emoji)}
+                                    className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110"
+                                >
+                                    <img src={`/emoji/${emoji}`} alt="emoji" className="w-full h-full object-contain" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                 </div>
              </div>
 
              {/* Right: Radar (Red) */}
              <div className={`flex-1 w-full max-w-xl flex flex-col gap-2 ${phase !== 'playing' && phase !== 'gameover' ? 'opacity-40 grayscale blur-[1px]' : ''} transition-all duration-500`}>
-                 <div className="flex justify-between items-center px-4 py-2 bg-gradient-to-l from-red-900/40 to-transparent rounded-lg border-r-4 border-red-500">
+                 <div className="flex justify-between items-center px-4 py-2 bg-gradient-to-l from-red-900/40 to-transparent rounded-lg border-r-4 border-red-500 relative">
                     <div className="flex-1"></div>
                     <h2 className="text-lg font-bold flex items-center gap-3 text-red-400 tracking-wider">
                        HOSTILE SECTOR
                        <i className="fi fi-rr-location-crosshairs"></i>
                     </h2>
-                 </div>
+                     
+                     {/* Opponent Emojis Overlay */}
+                     <div className="absolute -top-12 left-0 right-0 pointer-events-none flex justify-center items-end h-20 overflow-visible z-50">
+                        {activeEmojis.filter(e => e.senderId !== myUserId).map(emoji => (
+                            <div key={emoji.id} className="animate-bounce-in absolute flex flex-col items-center">
+                                <img src={`/emoji/${emoji.emojiName}`} className="w-12 h-12 md:w-16 md:h-16 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] filter brightness-125" alt="emoji" />
+                            </div>
+                        ))}
+                     </div>
+                  </div>
                  
                  <div className="bg-[#0D111F]/90 p-4 rounded-xl border border-red-500/30 shadow-[0_0_40px_rgba(220,38,38,0.15)] relative backdrop-blur-md w-full">
                      <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-red-500/50 rounded-tl-sm"></div>
@@ -693,6 +795,14 @@ export default function BattleshipMultiplayerPage() {
              <button onClick={() => setIsChatOpen(true)} className="ml-auto relative w-10 h-10 bg-cyan-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-cyan-500/40">
                 <i className="fi fi-rr-comment-alt"></i>
                 {chatMessages.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-[#0D111F]"></span>}
+             </button>
+             
+             {/* Mobile Emoji Button */}
+             <button 
+                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                className="ml-4 relative w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/40"
+             >
+                <i className="fi fi-rr-smile"></i>
              </button>
          </div>
       </div>
