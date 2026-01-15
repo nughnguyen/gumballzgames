@@ -83,7 +83,7 @@ export default function CaroPage() {
                     }
                 }
            })
-           .on('broadcast', { event: 'match_found' }, ({ payload }) => {
+           .on('broadcast', { event: 'match_found' }, ({ payload }: { payload: { targetSessionId: string, roomCode: string } }) => {
                 if (payload.targetSessionId === sessionId) {
                      router.push(`/game/caro/${payload.roomCode}`);
                 }
