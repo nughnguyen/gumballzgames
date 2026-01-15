@@ -699,22 +699,7 @@ export default function BattleshipMultiplayerPage() {
                      </div>
                  )}
 
-                 {isEmojiPickerOpen && (
-                    <div className="bg-cyan-900/10 p-3 rounded-xl border border-cyan-500/20 flex flex-wrap justify-center gap-2 backdrop-blur-sm">
-                        {AVAILABLE_EMOJIS.map(emoji => (
-                            <button key={emoji} onClick={() => handleSendEmoji(emoji)} className="p-2 hover:bg-cyan-500/20 rounded-lg transition-colors group">
-                                <div
-                                  className="w-8 h-8 bg-no-repeat group-hover:scale-110 transition-transform"
-                                  style={{
-                                      backgroundImage: `url(/emoji/${emoji})`,
-                                      backgroundSize: '10rem 8rem', 
-                                      backgroundPosition: '0 0'
-                                  }}
-                                ></div>
-                            </button>
-                        ))}
-                    </div>
-                 )}
+
 
                  {phase === 'waiting' && (
                      <div className="p-4 text-center bg-cyan-900/10 border border-cyan-500/20 rounded-xl">
@@ -753,7 +738,7 @@ export default function BattleshipMultiplayerPage() {
                     </button>
                     
                      {isEmojiPickerOpen && (
-                        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-64 bg-[#0D111F]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl z-[100] grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-[550px] max-w-[90vw] bg-[#0D111F]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-4 shadow-2xl z-[100] grid grid-cols-8 sm:grid-cols-10 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
                             {AVAILABLE_EMOJIS.map((emoji) => (
                                 <button
                                     key={emoji}
@@ -764,8 +749,8 @@ export default function BattleshipMultiplayerPage() {
                                       className="w-8 h-8 bg-no-repeat"
                                       style={{
                                           backgroundImage: `url(/emoji/${emoji})`,
-                                          backgroundSize: '10rem 8rem', /* Matches w-8 (2rem) */
-                                          backgroundPosition: '0 0'
+                                          backgroundSize: '10rem 8rem',
+                                          backgroundPosition: '-8rem -2rem'
                                       }}
                                     ></div>
                                 </button>
@@ -825,12 +810,34 @@ export default function BattleshipMultiplayerPage() {
              </button>
              
              {/* Mobile Emoji Button */}
-             <button 
-                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                className="ml-4 relative w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/40"
-             >
-                <i className="fi fi-rr-smile"></i>
-             </button>
+             <div className="relative ml-4">
+                 {isEmojiPickerOpen && (
+                    <div className="absolute bottom-14 right-0 w-[320px] bg-[#0D111F]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl z-[100] grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        {AVAILABLE_EMOJIS.map((emoji) => (
+                            <button
+                                key={emoji}
+                                onClick={() => handleSendEmoji(emoji)}
+                                className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                            >
+                                    <div
+                                    className="w-8 h-8 bg-no-repeat"
+                                    style={{
+                                        backgroundImage: `url(/emoji/${emoji})`,
+                                        backgroundSize: '10rem 8rem',
+                                        backgroundPosition: '-8rem -2rem'
+                                    }}
+                                ></div>
+                            </button>
+                        ))}
+                    </div>
+                 )}
+                 <button 
+                    onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                    className="relative w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/40"
+                 >
+                    {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
+                 </button>
+             </div>
          </div>
       </div>
       
