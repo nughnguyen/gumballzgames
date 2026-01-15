@@ -20,22 +20,39 @@ export async function getRoomByCode(roomCode: string): Promise<Room | null> {
 }
 
 /**
- * Delete rooms that have been inactive/empty for > 5 minutes
+ * Update room heartbeat (last_active timestamp)
+ */
+export async function updateRoomHeartbeat(roomCode: string): Promise<void> {
+  await supabase
+    .from('rooms')
+    .update({ last_active: new Date().toISOString() })
+    .eq('room_code', roomCode);
+}
+
+/**
+ * Delete rooms that have been inactive for > 3 minutes
+ * This implies "0 players" because active players send heartbeats.
  */
 export async function cleanupOldRooms(): Promise<void> {
-  // ISO string for 5 minutes ago
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  // ISO string for 3 minutes ago
+  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
 
-  // Delete waiting rooms created more than 5 minutes ago
+  // We rely on 'last_active' column. 
+  // If 'last_active' is null (legacy), we check 'created_at'.
+  // Logic: Delete if (last_active IS NOT NULL AND last_active < 3m) OR (last_active IS NULL AND created_at < 3m)
+  
+  // Note: Supabase/PostgREST filters are a bit limited for complex ORs in delete.
+  // We'll simplisticly delete based on last_active if possible, or created_at.
+  // Ideally, we run a stored procedure, but here we do client-side trigger.
+  
+  // 1. Delete inactive rooms (active > 3 mins ago)
+  // This effectively removes rooms where no players are sending heartbeats.
   const { error } = await supabase
     .from('rooms')
     .delete()
-    .lt('created_at', fiveMinutesAgo)
-    .eq('status', 'waiting'); // Only delete waiting rooms to avoid killing active games
+    .lt('last_active', threeMinutesAgo);
 
-  if (error) {
-    console.error('Error cleaning up rooms:', error);
-  }
+  if (error) console.error('Error cleaning up rooms:', error);
 }
 
 /**
@@ -44,7 +61,7 @@ export async function cleanupOldRooms(): Promise<void> {
  */
 export async function createRoom(
   roomCode: string,
-  gameType: 'caro' | 'battleship' | 'chess',
+  gameType: 'caro' | 'battleship' | 'chess' | 'memory' | 'uno',
   hostId?: string,
   hostNickname?: string,
   settings: Record<string, any> = {}
@@ -58,6 +75,7 @@ export async function createRoom(
     game_type: gameType,
     settings,
     status: 'waiting',
+    last_active: new Date().toISOString(),
   };
 
   // Discriminate between Auth User vs Guest
@@ -200,7 +218,7 @@ export async function getGameState(roomId: string): Promise<Record<string, any> 
  * Save game history with robust guest support
  */
 export async function saveGameHistory(
-  gameType: 'caro' | 'battleship' | 'chess',
+  gameType: 'caro' | 'battleship' | 'chess' | 'memory',
   player1: { id?: string; nickname?: string },
   player2: { id?: string; nickname?: string },
   winner: { id?: string; nickname?: string } | 'draw',

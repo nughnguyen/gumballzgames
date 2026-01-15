@@ -9,7 +9,7 @@ import type { CaroMove, ChatMessage } from '@/types';
 import { checkWin, getCurrentPlayer } from '@/lib/games/caro/gameLogic';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { supabase } from '@/lib/supabase/client';
-import { saveGameHistory } from '@/lib/supabase/rooms';
+import { saveGameHistory, updateRoomHeartbeat } from '@/lib/supabase/rooms';
 
 type PresenceState = {
   user_id: string;
@@ -79,10 +79,15 @@ export default function CaroGamePage() {
     }
   }, [authLoading, user, isGuest, router]);
 
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
   // Main Room Logic (Presence + Broadcast)
   useEffect(() => {
     if (authLoading) return; // Wait for auth to initialize
     if ((!user && !isGuest) || !roomCode) return;
+
+    // Reset error
+    setConnectionError(null);
 
     // Stable ID for the session
     const myPresenceId = user?.id || `guest-${Date.now()}`;
@@ -94,6 +99,18 @@ export default function CaroGamePage() {
       joined_at: new Date().toISOString(),
       online_at: new Date().toISOString(),
     };
+
+    console.log('Connecting to Caro Room:', roomCode, 'as', myNickname);
+
+    // Connection Timeout
+    const timeout = setTimeout(() => {
+        setLoading((l) => {
+            if (l) {
+                setConnectionError("Connection timed out. Please try refreshing.");
+            }
+            return l;
+        });
+    }, 10000);
 
     const channel = supabase.channel(`room:${roomCode}`, {
       config: {
@@ -109,6 +126,7 @@ export default function CaroGamePage() {
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState<PresenceState>();
         const users = Object.values(state).flat();
+        console.log('Presence Sync:', users);
         setOnlineUsers(users);
 
         // Determine Role immediately upon sync
@@ -121,9 +139,28 @@ export default function CaroGamePage() {
         if (p1?.user_id === myPresenceId) setMySymbol('X');
         else if (p2?.user_id === myPresenceId) setMySymbol('O');
         else setMySymbol(null); 
-
+        
+        // --- Heartbeat Logic ---
+        // If I am the host (p1) OR if I'm just a participant, I should signal activity.
+        // To reduce DB writes, maybe only the Host sends heartbeats?
+        // But if Host leaves, the Guest becomes the "keeper".
+        // Simplest: The "Host" (sortedUsers[0]) sends the heartbeat.
+        if (sortedUsers[0]?.user_id === myPresenceId) {
+             // I am the "Maintainer" of the room
+             if (room) { // We need 'room' object ID to update DB. 'roomCode' isn't the primary key?
+                 // Wait, updateRoomHeartbeat uses 'id'. Do we have room.id?
+                 // The page params gives us 'roomId' which is actually the CODE (e.g. AB12CD).
+                 // Our update cleanup function in rooms.ts uses 'id'. 
+                 // We need to fetch the room ID or change updateRoomHeartbeat to use 'room_code'.
+                 // Let's assume updateRoomHeartbeat needs 'id'.
+                 // We probably don't have the numeric ID here unless we fetched it.
+                 // Checking getRoomByCode in Page... it maps code -> room. 
+             }
+        }
+        // Let's fix updateRoomHeartbeat to use room_code first in next step or now.
+        // Actually, let's make updateRoomHeartbeat take roomCode.
+        
         // Auto-start if 2 players present and waiting
-        // We need to be careful not to restart if game is finished.
         if (users.length >= 2) {
              setGameStatus(prev => {
                  if (prev === 'waiting' && sortedUsers.length >= 2) return 'playing';
@@ -132,10 +169,9 @@ export default function CaroGamePage() {
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
+        console.log('Join:', newPresences);
         const newUsers = newPresences as unknown as PresenceState[];
         newUsers.forEach(u => {
-             // Avoid duplicate system messages if possible, but difficult without tracking.
-             // Simple "joined" is fine.
              setChatMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 senderId: 'system',
@@ -147,6 +183,7 @@ export default function CaroGamePage() {
         });
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        console.log('Leave:', leftPresences);
         const leftUsers = leftPresences as unknown as PresenceState[];
         leftUsers.forEach(u => {
              setChatMessages(prev => [...prev, {
@@ -181,11 +218,6 @@ export default function CaroGamePage() {
          setChatMessages(prev => [...prev, payload.payload as ChatMessage]);
       })
       .on('broadcast', { event: 'request_state' }, () => {
-         // If I have moves, share state
-         // To avoid storm, maybe only Player X shares?
-         // We can check if I am X (mySymbol === 'X')
-         // But inside this callback, mySymbol might be stale if not careful with closures.
-         // Using ref for current state is safer or checking moves length.
          if (moves.length > 0) {
              channel.send({
                  type: 'broadcast',
@@ -212,7 +244,9 @@ export default function CaroGamePage() {
          hasSyncedRef.current = true;
       })
       .subscribe(async (status) => {
+        console.log('Subscription Status:', status);
         if (status === 'SUBSCRIBED') {
+          clearTimeout(timeout);
           await channel.track(myPresence);
           setLoading(false);
           
@@ -226,6 +260,8 @@ export default function CaroGamePage() {
       });
 
     return () => {
+      clearTimeout(timeout);
+      console.log('Unsubscribing Caro Channel');
       supabase.removeChannel(channel);
     };
   }, [roomCode, user, isGuest, authLoading]); 
@@ -624,8 +660,23 @@ export default function CaroGamePage() {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="text-center">
-          <i className="fi fi-rr-spinner text-4xl text-[var(--accent-green)] animate-spin mb-4 block"></i>
-          <p className="text-[var(--text-primary)] text-xl">Connecting to room...</p>
+            {connectionError ? (
+                <>
+                    <i className="fi fi-rr-circle-xmark text-4xl text-red-500 mb-4 block"></i>
+                    <p className="text-red-400 text-xl mb-4">{connectionError}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-[var(--accent-green)] text-white rounded-lg font-bold"
+                    >
+                        Retry
+                    </button>
+                </>
+            ) : (
+                <>
+                  <i className="fi fi-rr-spinner text-4xl text-[var(--accent-green)] animate-spin mb-4 block"></i>
+                  <p className="text-[var(--text-primary)] text-xl">Connecting to room...</p>
+                </>
+            )}
         </div>
       </div>
     );

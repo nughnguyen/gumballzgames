@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import { generateRoomCode } from '@/lib/utils/roomCode';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { createRoom } from '@/lib/supabase/rooms';
 
 export default function CaroPage() {
   const router = useRouter();
@@ -13,13 +14,22 @@ export default function CaroPage() {
   const [isSearching, setIsSearching] = useState(false);
   const { user, isGuest } = useAuthStore();
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     if (!user && !isGuest) {
         alert("Please login first or set a guest nickname on the home page.");
         return;
     }
-    const roomCode = 'CR-' + generateRoomCode();
-    router.push(`/game/caro/${roomCode}`);
+    const roomCode = generateRoomCode();
+    const myId = user?.id || `guest-${Date.now()}`;
+    const myName = user?.guestNickname || user?.profile?.display_name || 'Host';
+
+    try {
+        await createRoom(roomCode, 'caro', myId, myName);
+        router.push(`/game/caro/${roomCode}`);
+    } catch (e) {
+        console.error(e);
+        alert('Failed to create room');
+    }
   };
 
   const handleQuickMatch = async () => {
@@ -48,27 +58,22 @@ export default function CaroPage() {
              const others = Object.values(state).flat().filter((u:any) => u.user_id !== myId);
              
              if (others.length > 0) {
-                 // Sort potential opponents to be deterministic (optional but good)
-                 // or just pick the first one.
                  const opponent = others[0] as any;
                  
-                 // Deterministic tie-breaker to avoid race conditions
-                 // If my ID > opponent ID, I initiate the match.
-                 // Otherwise I wait for them.
                  if (myId > opponent.user_id) {
-                     const roomCode = 'CR-' + generateRoomCode();
-                     
-                     // Broadcast to opponent
-                     channel.send({
-                         type: 'broadcast',
-                         event: 'match_found',
-                         payload: { target_id: opponent.user_id, roomCode }
+                     const roomCode = generateRoomCode();
+                     // Must create db room for consistency now
+                     createRoom(roomCode, 'caro', myId, myNickname).then(room => {
+                        if(room) {
+                            channel.send({
+                                type: 'broadcast',
+                                event: 'match_found',
+                                payload: { target_id: opponent.user_id, roomCode }
+                            });
+                            router.push(`/game/caro/${roomCode}`);
+                        }
                      });
-                     
-                     // Go myself
-                     router.push(`/game/caro/${roomCode}`);
                  }
-                 // Else: logic falls through, I wait for the 'match_found' event from them.
              }
         })
         .on('broadcast', { event: 'match_found' }, ({ payload }) => {

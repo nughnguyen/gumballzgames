@@ -9,12 +9,14 @@ import ChatPanel from '@/components/game/ChatPanel';
 import { 
   Cell, Grid, SHIPS, Ship, createEmptyGrid, canPlaceShip, placeShip, randomizeShips, CellState 
 } from '@/lib/games/battleship/logic';
+import { updateRoomHeartbeat } from '@/lib/supabase/rooms';
 import { ChatMessage } from '@/types';
 
 type GamePhase = 'waiting' | 'placement' | 'ready' | 'playing' | 'gameover';
 type PlayerRole = 'host' | 'guest' | null;
 
 interface PresenceState {
+  sessionId: string;
   user_id: string;
   nickname: string;
   joined_at: string;
@@ -24,7 +26,17 @@ interface PresenceState {
 export default function BattleshipMultiplayerPage() {
   const params = useParams();
   const router = useRouter();
-  const roomId = params.roomId as string;
+  // Normalize Room ID to ensure consistency (BS-XXXXXX)
+  const rawRoomId = params.roomId as string;
+  // Ensure we always work with the uppercase ID
+  const roomId = rawRoomId ? rawRoomId.toUpperCase() : '';
+
+  useEffect(() => {
+     if (roomId && !roomId.startsWith('BS-')) {
+         router.replace(`/game/battleship/BS-${roomId}`);
+     }
+  }, [roomId, router]);
+  
   const { user, isGuest, checkAuth, loading: authLoading } = useAuthStore();
   
   // -- Game State --
@@ -53,14 +65,20 @@ export default function BattleshipMultiplayerPage() {
   // Refs
   const channelRef = useRef<any>(null);
   const myGridRef = useRef(myGrid);
-  const myRoleRef = useRef(myRole);
+  
+  // Stable Identity
+  const [joinTime] = useState(new Date().toISOString());
+  // Create a unique session ID for this tab/window to allow same-user testing
+  const [sessionId] = useState(() => `sess-${Math.random().toString(36).substring(2, 9)}`);
+  
+  const myUserId = user?.id || `guest-${joinTime}`; 
+  const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
 
   useEffect(() => {
     myGridRef.current = myGrid;
-    myRoleRef.current = myRole;
-  }, [myGrid, myRole]);
+  }, [myGrid]);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (basic check)
   useEffect(() => {
     if (!authLoading && !user && !isGuest) {
       router.push('/');
@@ -76,25 +94,28 @@ export default function BattleshipMultiplayerPage() {
     setLogs(prev => [msg, ...prev].slice(0, 5));
   };
   
-  // Stable Identity
-  const [joinTime] = useState(new Date().toISOString());
-  const myUserId = user?.id || `guest-${joinTime}`; // Use joinTime to ensure stable guest ID if no user
-  const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
-
   // --- SUPABASE CONNECTION ---
   useEffect(() => {
     if (authLoading) return;
     if (!roomId) return;
 
+    // Heartbeat
+    const hbInterval = setInterval(() => {
+        updateRoomHeartbeat(roomId);
+    }, 60000);
+    updateRoomHeartbeat(roomId);
+
     setMyGrid(createEmptyGrid());
     setMyRadar(createEmptyGrid());
     
+    // Use sessionId as the unique presence key to handle multiple tabs/same user
     const channel = supabase.channel(`room:${roomId}`, {
-      config: { presence: { key: myUserId } }
+      config: { presence: { key: sessionId } }
     });
     channelRef.current = channel;
 
     const myPresence: PresenceState = {
+      sessionId: sessionId,
       user_id: myUserId,
       nickname: myNickname,
       joined_at: joinTime,
@@ -109,19 +130,23 @@ export default function BattleshipMultiplayerPage() {
         );
         setOnlineUsers(users);
 
-        // Determine Role
-        if (users[0]?.user_id === myUserId) {
+        // Determine Role based on who joined first (sessionId logic)
+        // If I am the first one in the list, I am host
+        if (users[0]?.sessionId === sessionId) {
             setMyRole('host');
-        } else if (users[1]?.user_id === myUserId) {
+        } else if (users[1]?.sessionId === sessionId) {
             setMyRole('guest');
         } else {
+            // Spectator or bug
             setMyRole(null);
         }
         
-        // Check Opponent Status
-        const opponent = users.find(u => u.user_id !== myUserId);
+        // Check Opponent Status (someone who is NOT me)
+        const opponent = users.find(u => u.sessionId !== sessionId);
         if (opponent) {
            setOpponentReady(!!opponent.isReady);
+        } else {
+           setOpponentReady(false);
         }
       })
       .on('broadcast', { event: 'fire' }, ({ payload }) => {
@@ -139,14 +164,16 @@ export default function BattleshipMultiplayerPage() {
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track(myPresence);
-          addLog("Comms established. Waiting for opponent.");
+          if(onlineUsers.length === 0) {
+              addLog("Comms established. Waiting for opponent.");
+          }
         }
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId, user, isGuest, authLoading, joinTime, myUserId, myNickname]); // Dependencies updated
+  }, [roomId, user, isGuest, authLoading, joinTime, myUserId, myNickname, sessionId]); 
 
   // --- GAME ACTIONS ---
 
@@ -181,9 +208,10 @@ export default function BattleshipMultiplayerPage() {
      setPhase('ready');
      addLog("Fleet locked. Waiting for opponent...");
      
-     // Robust tracking update
+     // Update presence to show ready
      if (channelRef.current) {
          await channelRef.current.track({
+             sessionId: sessionId,
              user_id: myUserId,
              nickname: myNickname,
              joined_at: joinTime,
@@ -261,7 +289,7 @@ export default function BattleshipMultiplayerPage() {
       const { x, y, result, gameOver } = payload;
       const isHit = result === 'hit';
       
-      const newRadar = setMyRadar(prev => {
+      setMyRadar(prev => {
           const n = prev.map(r => r.map(c => ({...c})));
           n[y][x].state = isHit ? 'hit' : 'miss';
           return n;
@@ -330,7 +358,7 @@ export default function BattleshipMultiplayerPage() {
     }
 
     if (cell.state === 'ship' && !isRadar) {
-         bgClass = "bg-[#19D153]/60 border-[#19D153]"; // Keeping green for consistency with other assets, or could use board-dark
+         bgClass = "bg-[#19D153]/60 border-[#19D153]"; 
     } else if (cell.state === 'hit') {
          bgClass = "bg-red-500/60 border-red-500";
          content = <span className="text-white font-bold text-xs">X</span>;
@@ -360,7 +388,7 @@ export default function BattleshipMultiplayerPage() {
     );
   };
 
-  const opponent = onlineUsers.find(u => u.user_id !== (user?.id || 'guest'));
+  const opponent = onlineUsers.find(u => u.sessionId !== sessionId);
   const opponentName = opponent ? opponent.nickname : 'Waiting...';
 
   return (
@@ -378,21 +406,24 @@ export default function BattleshipMultiplayerPage() {
                   <div className="flex items-center gap-2">
                      <h1 className="text-xl font-bold">Battleship</h1>
                      
-                     {/* Copy Link Button */}
                      <button 
                         onClick={() => {
-                            navigator.clipboard.writeText(window.location.href);
-                            addLog("Room link copied!");
+                            const url = `${window.location.origin}/game/battleship/${roomId}`;
+                            navigator.clipboard.writeText(url);
+                            addLog("Full room link copied!");
                         }} 
-                        title="Copy Room Link"
+                        title="Copy Join Link"
                         className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-1 transition-all"
                      >
+                        <span>Copy Link</span>
                         <i className="fi fi-rr-link-alt"></i>
                      </button>
 
-                     {/* Copy ID Button */}
                      <button 
-                        onClick={handleCopyCode} 
+                        onClick={() => {
+                            navigator.clipboard.writeText(roomId);
+                            addLog("Room ID copied!");
+                        }}
                         title="Copy Room ID"
                         className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-2 transition-all"
                      >

@@ -144,6 +144,32 @@ export default function Sidebar() {
                   </div>
                   <span className="text-xs bg-[var(--accent-orange)] px-2 py-0.5 rounded text-white">Soon</span>
                 </Link>
+
+                {/* Memory Game - New! */}
+                <Link
+                  href="/games/memory"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                    pathname === '/games/memory'
+                      ? 'bg-[var(--board-dark)] text-white'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span className="text-2xl">🎴</span>
+                  <span className="font-semibold">Memory Game</span>
+                </Link>
+
+                {/* Uno - New! */}
+                <Link
+                  href="/game/uno"
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                    pathname === '/game/uno'
+                      ? 'bg-[var(--board-dark)] text-white'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span className="text-2xl">🃏</span>
+                  <span className="font-semibold">Uno</span>
+                </Link>
               </div>
             </div>
           </div>

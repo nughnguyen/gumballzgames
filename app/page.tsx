@@ -124,21 +124,30 @@ export default function HomePage() {
                         type="text" 
                         value={roomCode}
                         onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                        placeholder="Enter Code" 
+                        placeholder="Enter 6-Character Code" 
                         className="w-full pl-11 pr-24 py-4 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-green)] focus:ring-1 focus:ring-[var(--accent-green)] uppercase font-mono"
                         maxLength={10}
                         onKeyDown={async (e) => {
                           if (e.key === 'Enter' && roomCode.trim()) {
                             try {
-                                const room = await getRoomByCode(roomCode.trim());
+                                const rawCode = roomCode.trim().toUpperCase();
+                                // Look up room in DB first
+                                const room = await getRoomByCode(rawCode);
+                                
                                 if (room) {
                                     router.push(`/game/${room.game_type}/${room.room_code}`);
                                 } else {
-                                    alert('Room not found!');
+                                    // Legacy / Fallback: If not in DB, try to guess from prefix if present
+                                    if (rawCode.startsWith('BS-')) router.push(`/game/battleship/${rawCode}`);
+                                    else if (rawCode.startsWith('CR-')) router.push(`/game/caro/${rawCode}`);
+                                    else if (rawCode.startsWith('UN-') || rawCode.startsWith('UO-')) router.push(`/game/uno/${rawCode}`);
+                                    else if (rawCode.startsWith('MM-')) router.push(`/game/memory/${rawCode}`);
+                                    else {
+                                        alert('Room not found! Please check the code.');
+                                    }
                                 }
                             } catch (error) {
                                 console.error("Error joining room:", error);
-                                // Fallback for legacy/offline testing if needed, or just error
                                 alert('Error joining room. Please try again.');
                             }
                           }
@@ -149,12 +158,22 @@ export default function HomePage() {
                           if (!roomCode.trim()) return;
                           
                           try {
-                              const room = await getRoomByCode(roomCode.trim());
-                              if (room) {
-                                  router.push(`/game/${room.game_type}/${room.room_code}`);
-                              } else {
-                                  alert('Room not found!');
-                              }
+                                const rawCode = roomCode.trim().toUpperCase();
+                                // Look up room in DB first
+                                const room = await getRoomByCode(rawCode);
+                                
+                                if (room) {
+                                    router.push(`/game/${room.game_type}/${room.room_code}`);
+                                } else {
+                                    // Fallback: If not in DB, try to guess from prefix
+                                    if (rawCode.startsWith('BS-')) router.push(`/game/battleship/${rawCode}`);
+                                    else if (rawCode.startsWith('CR-')) router.push(`/game/caro/${rawCode}`);
+                                    else if (rawCode.startsWith('UN-') || rawCode.startsWith('UO-')) router.push(`/game/uno/${rawCode}`);
+                                    else if (rawCode.startsWith('MM-')) router.push(`/game/memory/${rawCode}`);
+                                    else {
+                                        alert('Room not found! Please check the code.');
+                                    }
+                                }
                           } catch (error) {
                               console.error("Error joining room:", error);
                               alert('Error joining room. Please try again.');

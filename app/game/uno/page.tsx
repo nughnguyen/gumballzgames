@@ -1,95 +1,78 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
-import BattleshipGame from '@/components/games/Battleship/BattleshipGame';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { createRoom, updateRoomHeartbeat } from '@/lib/supabase/rooms';
-import { generateRoomCode } from '@/lib/utils/roomCode';
 
-export default function BattleshipPage() {
+export default function UnoMenuPage() {
   const router = useRouter();
   const { user, isGuest } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'play' | 'howto'>('play');
-  const [mode, setMode] = useState<'menu' | 'local'>('menu');
   const [isSearching, setIsSearching] = useState(false);
-
-  // Create a unique session ID for this tab/window to allow same-user testing
   const [sessionId] = useState(() => `sess-${Math.random().toString(36).substring(2, 9)}`);
 
-  // Cleanup matchmaking channel on unmount or when search stops
+  // --- Matchmaking Logic (Simple) ---
   useEffect(() => {
     let channel: any = null;
 
     if (isSearching) {
       const myId = user?.id || `guest-${Date.now()}`;
-      const myNickname = user?.guestNickname || user?.profile?.display_name || 'Commander';
+      const myNickname = user?.guestNickname || user?.profile?.display_name || 'Uno Player';
 
-      channel = supabase.channel('matchmaking:battleship', {
-        config: {
-          presence: {
-            key: sessionId, // Use unique session ID for presence
-          }
-        }
+      channel = supabase.channel('matchmaking:uno', {
+        config: { presence: { key: sessionId } }
       });
 
       channel
         .on('presence', { event: 'sync' }, async () => {
           const state = channel.presenceState();
-          // Filter out myself based on sessionId, allow same user_id (for testing)
+          // Filter out myself based on sessionId
           const others = Object.values(state).flat().filter((u:any) => u.sessionId !== sessionId);
           
           if (others.length > 0) {
+            // Found opponent! Match with the first one.
             const opponent = others[0] as any;
             
-            // Deterministic tie-breaker using sessionId
+            // Deterministic tie-breaker: Lower SessionID creates the room
             if (sessionId > opponent.sessionId) {
-              const roomId = 'BS-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+              const roomId = 'UO-' + Math.random().toString(36).substring(2, 8).toUpperCase();
               
-              // Broadcast to opponent
+              // Broadcast
               await channel.send({
                 type: 'broadcast',
                 event: 'match_found',
                 payload: { targetSessionId: opponent.sessionId, roomId }
               });
               
-              router.push(`/game/battleship/${roomId}`);
+              router.push(`/game/uno/${roomId}`);
             }
           }
         })
         .on('broadcast', { event: 'match_found' }, ({ payload }: { payload: { targetSessionId: string; roomId: string } }) => {
           if (payload.targetSessionId === sessionId) {
-            router.push(`/game/battleship/${payload.roomId}`);
+            router.push(`/game/uno/${payload.roomId}`);
           }
         })
         .subscribe(async (status: string) => {
-          if (status === 'SUBSCRIBED') {
-            await channel.track({
-              sessionId: sessionId,
-              user_id: myId,
-              nickname: myNickname,
-              joined_at: new Date().toISOString()
-            });
-          }
+           if (status === 'SUBSCRIBED') {
+             await channel.track({ sessionId, user_id: myId, nickname: myNickname });
+           }
         });
     }
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      if (channel) supabase.removeChannel(channel);
     };
   }, [isSearching, user, isGuest, router, sessionId]);
 
-  const handleCreateRoom = async () => {
-    const roomCode = generateRoomCode();
-    const myId = user?.id || `guest-${Date.now()}`;
-    const myName = user?.guestNickname || user?.profile?.display_name || 'Host';
-    
-    await createRoom(roomCode, 'battleship', myId, myName);
-    router.push(`/game/battleship/${roomCode}`);
+
+  // --- Actions ---
+  const handleCreateRoom = () => {
+    const roomId = 'UO-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    router.push(`/game/uno/${roomId}`);
   };
 
   const handleQuickMatch = () => {
@@ -100,24 +83,17 @@ export default function BattleshipPage() {
     setIsSearching(true);
   };
 
-  if (mode === 'local') {
-      return (
-        <div className="flex min-h-screen bg-primary">
-           <Sidebar />
-           <main className="flex-1 overflow-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-secondary to-primary">
-             <div className="p-4">
-               <button 
-                  onClick={() => setMode('menu')} 
-                  className="mb-4 text-text-secondary hover:text-text-primary flex items-center gap-2 text-sm"
-                >
-                  ← Back to Menu
-                </button>
-                <BattleshipGame />
-             </div>
-           </main>
-        </div>
-      );
-  }
+  const handleJoinByCode = () => {
+      const input = document.getElementById('roomCodeInput') as HTMLInputElement;
+      let code = input.value.trim().toUpperCase();
+      if(code) {
+        if(!code.startsWith('UO-')) {
+           code = 'UO-' + code;
+        }
+        router.push(`/game/uno/${code}`);
+      }
+  };
+
 
   return (
     <div className="flex min-h-screen bg-primary">
@@ -127,11 +103,11 @@ export default function BattleshipPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-text-primary mb-3 flex items-center gap-4">
-              <span className="text-6xl">⚓</span>
-              Battleship
+              <span className="text-6xl">🃏</span>
+              Uno
             </h1>
             <p className="text-text-secondary text-lg">
-              Deployment Phase initiated. Command your fleet to victory!
+              The classic card game of matching colors and numbers.
             </p>
           </div>
 
@@ -159,8 +135,7 @@ export default function BattleshipPage() {
             </button>
           </div>
 
-          {/* Play Tab */}
-          {/* Play Tab */}
+          {/* PLAY TAB */}
           {activeTab === 'play' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
@@ -178,7 +153,7 @@ export default function BattleshipPage() {
                          </div>
                     </div>
                     <p className="text-text-secondary text-sm mb-4">
-                      Create a secure channel and share code to enter naval combat.
+                      Create a private room to play with up to 4 friends.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                         <button
@@ -195,16 +170,7 @@ export default function BattleshipPage() {
                                 className="flex-1 bg-primary border border-border-primary rounded-lg px-3 py-2.5 text-text-primary uppercase text-sm placeholder:text-text-tertiary outline-none focus:border-accent-green" 
                              />
                              <button 
-                                onClick={() => {
-                                    const input = document.getElementById('roomCodeInput') as HTMLInputElement;
-                                    let code = input.value.trim().toUpperCase();
-                                    if(code) {
-                                      if(!code.startsWith('BS-')) {
-                                         code = 'BS-' + code;
-                                      }
-                                      router.push(`/game/battleship/${code}`);
-                                    }
-                                }}
+                                onClick={handleJoinByCode}
                                 className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-text-primary font-semibold rounded-lg border border-border-primary text-sm"
                              >
                                 Join
@@ -218,25 +184,6 @@ export default function BattleshipPage() {
                 </div>
               </div>
 
-              {/* Play with Bot */}
-              <div className="bg-secondary/80 border border-border-primary rounded-lg p-5 hover:border-white/20 transition-all backdrop-blur-sm flex flex-col justify-between">
-                 <div>
-                    <h3 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
-                      <span className="text-2xl">🤖</span>
-                      Play with Bot
-                    </h3>
-                    <p className="text-text-secondary text-sm mb-3">
-                      Training Simulation. Practice targeting against AI.
-                    </p>
-                 </div>
-                 <button
-                      onClick={() => setMode('local')}
-                      className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-text-primary font-semibold rounded-lg border border-border-primary text-sm"
-                 >
-                      Start Simulation
-                 </button>
-              </div>
-
               {/* Quick Match */}
               <div className="bg-secondary/80 border border-border-primary rounded-lg p-5 hover:border-accent-orange transition-all shadow-lg backdrop-blur-sm flex flex-col justify-between">
                 <div>
@@ -245,7 +192,7 @@ export default function BattleshipPage() {
                       Quick Match
                     </h3>
                     <p className="text-text-secondary text-sm mb-3">
-                      Get matched with random commanders worldwide.
+                      Find a random game immediately.
                     </p>
                 </div>
                 <button
@@ -258,48 +205,40 @@ export default function BattleshipPage() {
                 </button>
                 {isSearching && (
                     <p className="text-xs text-text-tertiary mt-2 animate-pulse text-center">
-                        Looking for opponent...
+                        Looking for match...
                     </p>
                 )}
               </div>
             </div>
           )}
 
-          {/* How to Play Tab */}
+          {/* HOW TO PLAY TAB */}
           {activeTab === 'howto' && (
-            <div className="space-y-6 text-text-primary">
-              {/* Objective */}
-              <div className="bg-white/5 border border-border-primary rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-accent-green mb-4">🎯 Objective</h3>
-                <p className="text-text-secondary text-lg">
-                  Sink all 5 ships in your opponent's fleet before they sink yours.
-                </p>
-              </div>
+             <div className="space-y-6 text-text-primary">
+                {/* Objective */}
+                <div className="bg-white/5 border border-border-primary rounded-lg p-6">
+                    <h3 className="text-2xl font-bold text-accent-green mb-4">🎯 Objective</h3>
+                    <p className="text-text-secondary text-lg">
+                    Be the first player to get rid of all your cards.
+                    </p>
+                </div>
 
-              {/* How to Play */}
-              <div className="bg-white/5 border border-border-primary rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-text-primary mb-4">🕹️ How to Play</h3>
-                <ol className="space-y-3 text-text-secondary">
-                  <li className="flex gap-3">
-                    <span className="text-accent-green font-bold">1.</span>
-                    <span><strong>Deploy your Fleet:</strong> Place your 5 ships (Carrier, Battleship, Cruiser, Submarine, Destroyer) on the grid.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-accent-green font-bold">2.</span>
-                    <span><strong>Rotate:</strong> Use the rotate button to fit ships strategically.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-accent-green font-bold">3.</span>
-                    <span><strong>Fire:</strong> Click on the enemy grid (Radar) to fire shots.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-accent-green font-bold">4.</span>
-                    <span><strong>Hit & Miss:</strong> Red 'X' means a HIT. White dot means a MISS. Hits grant an extra turn!</span>
-                  </li>
-                </ol>
-              </div>
-            </div>
+                {/* Rules */}
+                <div className="bg-white/5 border border-border-primary rounded-lg p-6">
+                    <h3 className="text-2xl font-bold text-text-primary mb-4">📜 Rules</h3>
+                    <ul className="space-y-3 text-text-secondary list-disc pl-5">
+                      <li>Match the top card on the discard pile by <strong>Color</strong>, <strong>Number</strong>, or <strong>Symbol</strong>.</li>
+                      <li>If you have no matching card, you must draw from the deck.</li>
+                      <li><strong>Wild</strong>: Change the current color.</li>
+                      <li><strong>Wild Draw 4</strong>: Change color + next player draws 4 and skips turn.</li>
+                      <li><strong>Draw 2</strong>: Next player draws 2 and skips turn.</li>
+                      <li><strong>Skip</strong>: Next player is skipped.</li>
+                      <li><strong>Reverse</strong>: Reverses the direction of play.</li>
+                    </ul>
+                </div>
+             </div>
           )}
+
         </div>
       </main>
     </div>
