@@ -180,7 +180,11 @@ export default function BattleshipMultiplayerPage() {
         else setMyRole(null);
         
         // Check Opponent Status
-        const opponent = users.find(u => u.sessionId !== sessionId);
+        // Find ALL opponents, and check if ANY of them are ready? 
+        // Or better: prioritize the most recent opponent (last in the sorted list that isn't me)
+        const others = users.filter(u => u.sessionId !== sessionId);
+        const opponent = others.length > 0 ? others[others.length - 1] : null;
+        
         if (opponent) {
            setOpponentReady(!!opponent.isReady);
         } else {
