@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, isGuest, logout } = useAuthStore();
+  const { user, isGuest } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
 
   // Close sidebar on navigation (mobile)
@@ -217,14 +217,7 @@ export default function Sidebar() {
                 </div>
               </div>
               
-              {!isGuest && user && (
-                <button
-                  onClick={() => logout()}
-                  className="w-full px-4 py-2 bg-[var(--game-lose)] hover:opacity-80 text-white rounded-lg transition-all font-semibold"
-                >
-                  Logout
-                </button>
-              )}
+
               
               {isGuest && (
                 <Link

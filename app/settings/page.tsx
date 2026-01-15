@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/stores/authStore';
 import { useState } from 'react';
 
 export default function SettingsPage() {
-  const { user, isGuest } = useAuthStore();
+  const { user, isGuest, logout } = useAuthStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notifications, setNotifications] = useState(true);
 
@@ -82,6 +82,28 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Account Settings */}
+            {!isGuest && user && (
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                  <i className="fi fi-rr-lock text-[var(--accent-green)]"></i> Account
+                </h2>
+                
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => logout()}
+                    className="w-full flex items-center justify-between p-4 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--game-lose)] hover:bg-[var(--game-lose)] hover:text-white transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <i className="fi fi-rr-sign-out-alt text-[var(--game-lose)] group-hover:text-white transition-colors"></i>
+                      <div className="font-semibold">Log Out</div>
+                    </div>
+                    <i className="fi fi-rr-angle-small-right"></i>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
