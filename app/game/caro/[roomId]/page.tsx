@@ -708,8 +708,7 @@ export default function CaroGamePage() {
                         ))}
                     </div>
                 )}
-               </div>
-
+                
                {/* Controls */}
                 <div className="flex items-center gap-2">
                     <button 
