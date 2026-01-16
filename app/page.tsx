@@ -1,13 +1,13 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { getRoomByCode } from '@/lib/supabase/rooms';
 import Link from 'next/link';
 import Sidebar from '@/components/layout/Sidebar';
 
-export default function HomePage() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isGuest, loginAsGuest, checkAuth, loading } = useAuthStore();
@@ -33,8 +33,6 @@ export default function HomePage() {
       setShowGuestModal(false);
     }
   };
-
-
 
   if (loading) {
     return (
@@ -288,5 +286,22 @@ export default function HomePage() {
         </main>
       </div>
     </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="text-center">
+            <div className="flex justify-center mb-4">
+                <i className="fi fi-rr-spinner text-4xl text-[var(--accent-green)] animate-spin"></i>
+            </div>
+            <div className="text-[var(--text-primary)] text-xl font-semibold">Loading...</div>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
