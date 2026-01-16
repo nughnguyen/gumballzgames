@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { getRoomByCode } from '@/lib/supabase/rooms';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import Sidebar from '@/components/layout/Sidebar';
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isGuest, loginAsGuest, checkAuth, loading } = useAuthStore();
   const [guestNickname, setGuestNickname] = useState('');
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -20,10 +21,11 @@ export default function HomePage() {
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!loading && !user && !isGuest) {
+    const skipWelcome = searchParams.get('skip_welcome');
+    if (!loading && !user && !isGuest && !skipWelcome) {
       setShowGuestModal(true);
     }
-  }, [loading, user, isGuest]);
+  }, [loading, user, isGuest, searchParams]);
 
   const handleGuestLogin = () => {
     if (guestNickname.trim().length >= 3) {

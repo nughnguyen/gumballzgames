@@ -49,7 +49,7 @@ export default function LoginPage() {
       >
         <div className="bg-secondary shadow-2xl rounded-xl border border-border-primary overflow-hidden relative">
           {/* Close Button */}
-          <Link href="/" className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary transition-colors p-1 z-20">
+          <Link href="/?skip_welcome=true" className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary transition-colors p-1 z-20">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -144,7 +144,7 @@ export default function LoginPage() {
              <div className="mt-3 pt-3 border-t border-border-secondary">
                <p className="text-text-secondary text-sm mb-3">
                   Just want to play?{' '}
-                  <Link href="/" className="text-accent-green font-semibold hover:underline">
+                  <Link href="/?skip_welcome=true" className="text-accent-green font-semibold hover:underline">
                       Play as Guest
                   </Link>
                </p>
