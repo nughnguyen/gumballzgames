@@ -45,6 +45,31 @@ export default function CaroGamePage() {
 
   const currentPlayer = getCurrentPlayer(moves);
 
+  // -- Emoji State --
+  interface ActiveEmoji {
+    id: string;
+    senderId: string;
+    emojiName: string;
+    timestamp: number;
+  }
+
+  const AVAILABLE_EMOJIS = [
+    '20250405emoticons-SheetAngry.png', '20250405emoticons-SheetCant.png', '20250405emoticons-SheetCome.png',
+    '20250405emoticons-SheetCrying.png', '20250405emoticons-SheetCute.png', '20250405emoticons-SheetDizzy.png',
+    '20250405emoticons-SheetDown.png', '20250405emoticons-SheetDrooling.png', '20250405emoticons-SheetEager.png',
+    '20250405emoticons-SheetExclamation.png', '20250405emoticons-SheetFrustrated.png', '20250405emoticons-SheetHeadblown.png',
+    '20250405emoticons-SheetIdea.png', '20250405emoticons-SheetKissing.png', '20250405emoticons-SheetLaughing.png',
+    '20250405emoticons-SheetLeft.png', '20250405emoticons-SheetLit.png', '20250405emoticons-SheetLove.png',
+    '20250405emoticons-SheetNeutral.png', '20250405emoticons-SheetNo.png', '20250405emoticons-SheetOMG.png',
+    '20250405emoticons-SheetOk.png', '20250405emoticons-SheetQuestion.png', '20250405emoticons-SheetRight.png',
+    '20250405emoticons-SheetSilence.png', '20250405emoticons-SheetSleepy.png', '20250405emoticons-SheetSpeechless.png',
+    '20250405emoticons-SheetSweat.png', '20250405emoticons-SheetThinking.png', '20250405emoticons-SheetTongue.png',
+    '20250405emoticons-SheetYes.png', '20250405emoticons-Sheetup.png'
+  ];
+
+  const [activeEmojis, setActiveEmojis] = useState<ActiveEmoji[]>([]);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+
   // Initialize Auth
   useEffect(() => {
     checkAuth();
@@ -253,6 +278,9 @@ export default function CaroGamePage() {
       .on('broadcast', { event: 'chat' }, (payload) => {
          setChatMessages(prev => [...prev, payload.payload as ChatMessage]);
       })
+      .on('broadcast', { event: 'emoji' }, ({ payload }) => {
+          handleIncomingEmoji(payload);
+      })
       .on('broadcast', { event: 'request_state' }, () => {
          if (moves.length > 0) {
              channel.send({
@@ -350,214 +378,8 @@ export default function CaroGamePage() {
       }
   }, [moves, gameStatus, winner, rematchRequests, mySymbol, onlineUsers, user]);
 
-  // Main Room Logic (Presence + Broadcast)
-  useEffect(() => {
-    if ((!user && !isGuest) || !roomCode) return;
-
-    // Stable ID for the session
-    const myPresenceId = user?.id || `guest-${Date.now()}`;
-    const myNickname = user?.guestNickname || user?.profile?.display_name || 'Player';
-
-    const myPresence: PresenceState = {
-      user_id: myPresenceId,
-      nickname: myNickname,
-      joined_at: new Date().toISOString(),
-      online_at: new Date().toISOString(),
-    };
-
-    const channel = supabase.channel(`room:${roomCode}`, {
-      config: {
-        presence: {
-          key: myPresenceId,
-        },
-      },
-    });
-
-    channelRef.current = channel;
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState<PresenceState>();
-        const users = Object.values(state).flat();
-        setOnlineUsers(users);
-
-        // Determine Role immediately upon sync
-        const sortedUsers = users.sort((a, b) => 
-            new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
-        );
-        const p1 = sortedUsers[0];
-        const p2 = sortedUsers[1];
-
-        // Randomize starting player (X goes first) based on Room Code hash
-        const roomHash = roomCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const p1IsX = roomHash % 2 === 0;
-
-        // Only update symbol if game is NOT playing (prevent swapping mid-game)
-        if (gameStatusRef.current !== 'playing') {
-             if (p1?.user_id === myPresenceId) setMySymbol(p1IsX ? 'X' : 'O');
-             else if (p2?.user_id === myPresenceId) setMySymbol(p1IsX ? 'O' : 'X');
-             else setMySymbol(null); 
-        }
-
-        // Auto-start if 2 players present and waiting
-        if (users.length >= 2) {
-             setGameStatus(prev => {
-                 // Check using Ref to avoid stale closure during sync? 
-                 // SetGameStatus updater is safe.
-                 if (prev === 'waiting' && sortedUsers.length >= 2) return 'playing';
-                 return prev;
-             });
-        }
-      })
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const newUsers = newPresences as unknown as PresenceState[];
-        newUsers.forEach(u => {
-             setChatMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                senderId: 'system',
-                senderName: 'System',
-                content: `${u.nickname} joined.`,
-                timestamp: Date.now(),
-                isSystem: true
-             }]);
-        });
-      })
-      .on('presence', { event: 'leave' }, async ({ leftPresences }) => {
-        const leftUsers = leftPresences as unknown as PresenceState[];
-        
-        let opponentLeft = false;
-        leftUsers.forEach(u => {
-             setChatMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                senderId: 'system',
-                senderName: 'System',
-                content: `${u.nickname} left.`,
-                timestamp: Date.now(),
-                isSystem: true
-             }]);
-
-             // Check if this user was my opponent
-             if (u.user_id === activeOpponentIdRef.current) {
-                 if (gameStatusRef.current === 'playing') {
-                     opponentLeft = true;
-                 } else if (gameStatusRef.current === 'finished') {
-                     handleSendMessage("Opponent left the room. Rematch cancelled.");
-                     setRematchRequests([]);
-                     setChatMessages(prev => [...prev, {
-                        id: Date.now().toString(),
-                        senderId: 'system',
-                        senderName: 'System',
-                        content: 'Opponent left. You can exit to lobby.',
-                        timestamp: Date.now(),
-                        isSystem: true
-                     }]);
-                 }
-             }
-        });
-
-        if (opponentLeft && mySymbolRef.current) {
-             const winnerSymbol = mySymbolRef.current;
-             setWinner(winnerSymbol);
-             setGameStatus('finished');
-             setShowEndModal(true);
-             
-             new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
-             
-             handleSendMessage("Opponent disconnected. You win!");
-             
-             // Save history (Since opponent is gone, I am responsible)
-             const myInfo = { 
-                 id: user?.id || (user as any)?.guestId, // Handle guest ID better
-                 nickname: myNickname 
-             };
-             // We can try to get opponent info from the leftUser object
-             const leaver = leftUsers.find(u => u.user_id === activeOpponentIdRef.current);
-             const opponentInfo = {
-                 id: leaver?.user_id.startsWith('guest') ? undefined : leaver?.user_id,
-                 nickname: leaver?.nickname
-             };
-             
-             await saveGameHistory(
-                 'caro',
-                 mySymbolRef.current === 'X' ? myInfo : opponentInfo,
-                 mySymbolRef.current === 'O' ? myInfo : opponentInfo,
-                 myInfo, // Winner
-                 movesRef.current.length,
-                 0 
-             );
-        }
-      })
-      .on('broadcast', { event: 'game_update' }, (payload) => {
-        const { moves: newMoves, winner: newWinner, gameStatus: newStatus, rematchRequests: newRequests } = payload.payload as any;
-        
-        if (newMoves) setMoves(newMoves);
-        if (newMoves && newMoves.length === 0) {
-           setWinner(null);
-           setGameStatus('playing');
-           setShowEndModal(false);
-           setRematchRequests([]);
-        }
-
-        if (newWinner) {
-            setWinner(newWinner);
-            setShowEndModal(true);
-            
-            if (newWinner === mySymbolRef.current) {
-                new Audio('/sfx/victory.webm').play().catch(e => console.error("Audio play failed", e));
-            } else {
-                new Audio('/sfx/defeat.webm').play().catch(e => console.error("Audio play failed", e));
-            }
-        }
-        if (newStatus) setGameStatus(newStatus);
-        if (newRequests) setRematchRequests(newRequests);
-      })
-      .on('broadcast', { event: 'chat' }, (payload) => {
-         setChatMessages(prev => [...prev, payload.payload as ChatMessage]);
-      })
-      .on('broadcast', { event: 'request_state' }, () => {
-         if (movesRef.current.length > 0) {
-             channel.send({
-                 type: 'broadcast',
-                 event: 'sync_state',
-                 payload: {
-                     moves: movesRef.current,
-                     gameStatus: gameStatusRef.current,
-                     winner: winnerRef.current,
-                     rematchRequests: rematchRef.current
-                 }
-             });
-         }
-      })
-      .on('broadcast', { event: 'sync_state' }, (payload) => {
-         if (hasSyncedRef.current) return;
-         const data = payload.payload;
-         if (data.moves) setMoves(data.moves);
-         if (data.gameStatus) setGameStatus(data.gameStatus);
-         if (data.winner) {
-             setWinner(data.winner);
-             setShowEndModal(true);
-         }
-         if (data.rematchRequests) setRematchRequests(data.rematchRequests);
-         hasSyncedRef.current = true;
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track(myPresence);
-          setLoading(false);
-          
-          // Request state
-          channel.send({
-              type: 'broadcast',
-              event: 'request_state',
-              payload: {}
-          });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [roomCode, user, isGuest]); 
+  // Duplicate useEffect removed
+ 
 
   // Handlers
   const handleSendMessage = async (content: string) => {
@@ -725,6 +547,34 @@ export default function CaroGamePage() {
   const opponent = onlineUsers.find(u => u.nickname !== myPresenceNickname());
   const opponentName = opponent ? opponent.nickname : 'Waiting...';
 
+  // -- Emoji Handlers --
+  const handleIncomingEmoji = (payload: ActiveEmoji) => {
+      setActiveEmojis(prev => [...prev, payload]);
+      setTimeout(() => {
+          setActiveEmojis(prev => prev.filter(e => e.id !== payload.id));
+      }, 3000);
+  };
+
+  const handleSendEmoji = async (emojiName: string) => {
+      if (!user && !isGuest) return;
+      
+      const newEmoji: ActiveEmoji = {
+          id: Math.random().toString(36).substr(2, 9),
+          senderId: user?.id || `guest-${Date.now()}`,
+          emojiName,
+          timestamp: Date.now()
+      };
+      
+      handleIncomingEmoji(newEmoji); // Show locally
+      await channelRef.current?.send({
+          type: 'broadcast',
+          event: 'emoji',
+          payload: newEmoji
+      });
+      setIsEmojiPickerOpen(false);
+  };
+
+
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-primary)]">
@@ -759,6 +609,27 @@ export default function CaroGamePage() {
       
       <div className="flex-1 flex flex-col md:flex-row relative max-w-full">
         <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+            {/* Emojis Overlay */}
+            <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                {activeEmojis.map(emoji => (
+                    <div 
+                        key={emoji.id} 
+                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
+                        style={{
+                            top: emoji.senderId === (user?.id || (user as any)?.guestId) ? '70%' : '30%'
+                        }}
+                    >
+                        <div 
+                          className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                          style={{ 
+                              backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                              backgroundSize: '10rem 8rem',
+                              backgroundPosition: '-8rem -2rem'
+                          }}
+                        ></div>
+                    </div>
+                ))}
+            </div>
             {/* Header */}
             <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
                <div>
@@ -788,6 +659,59 @@ export default function CaroGamePage() {
                     </button>
 
                     {/* Copy ID Button */}
+                    <button 
+                       onClick={() => {
+                           navigator.clipboard.writeText(roomCode);
+                           setChatMessages(prev => [...prev, {
+                               id: Date.now().toString(),
+                               senderId: 'system',
+                               senderName: 'System',
+                               content: 'Room ID copied to clipboard.',
+                               timestamp: Date.now(),
+                               isSystem: true
+                           }]);
+                       }}
+                       title="Copy Room ID"
+                       className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-1 transition-all"
+                    >
+                       <strong className="tracking-widest">{roomCode}</strong>
+                       <i className="fi fi-rr-copy"></i>
+                    </button>
+
+                    {/* Emoji Toggle */}
+                    <button 
+                       onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                       className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 flex items-center justify-center hover:scale-110 transition-transform ml-2"
+                    >
+                        {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
+                    </button>
+                 </div>
+                 
+                 {/* Emoji Picker */}
+                 {isEmojiPickerOpen && (
+                    <div className="absolute top-16 left-4 right-auto w-[350px] max-w-[90vw] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl z-[100] grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        {AVAILABLE_EMOJIS.map((emoji) => (
+                            <button
+                                key={emoji}
+                                onClick={() => handleSendEmoji(emoji)}
+                                className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                            >
+                                 <div
+                                  className="w-8 h-8 bg-no-repeat"
+                                  style={{
+                                      backgroundImage: `url(/emoji/${emoji})`,
+                                      backgroundSize: '10rem 8rem',
+                                      backgroundPosition: '-8rem -2rem'
+                                  }}
+                                ></div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+               </div>
+
+               {/* Controls */}
+                <div className="flex items-center gap-2">
                     <button 
                        onClick={() => {
                            navigator.clipboard.writeText(roomCode);

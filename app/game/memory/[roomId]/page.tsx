@@ -45,6 +45,27 @@ type PresenceState = {
   isHost: boolean;
 };
 
+interface ActiveEmoji {
+    id: string;
+    senderId: string;
+    emojiName: string;
+    timestamp: number;
+}
+  
+const AVAILABLE_EMOJIS = [
+    '20250405emoticons-SheetAngry.png', '20250405emoticons-SheetCant.png', '20250405emoticons-SheetCome.png',
+    '20250405emoticons-SheetCrying.png', '20250405emoticons-SheetCute.png', '20250405emoticons-SheetDizzy.png',
+    '20250405emoticons-SheetDown.png', '20250405emoticons-SheetDrooling.png', '20250405emoticons-SheetEager.png',
+    '20250405emoticons-SheetExclamation.png', '20250405emoticons-SheetFrustrated.png', '20250405emoticons-SheetHeadblown.png',
+    '20250405emoticons-SheetIdea.png', '20250405emoticons-SheetKissing.png', '20250405emoticons-SheetLaughing.png',
+    '20250405emoticons-SheetLeft.png', '20250405emoticons-SheetLit.png', '20250405emoticons-SheetLove.png',
+    '20250405emoticons-SheetNeutral.png', '20250405emoticons-SheetNo.png', '20250405emoticons-SheetOMG.png',
+    '20250405emoticons-SheetOk.png', '20250405emoticons-SheetQuestion.png', '20250405emoticons-SheetRight.png',
+    '20250405emoticons-SheetSilence.png', '20250405emoticons-SheetSleepy.png', '20250405emoticons-SheetSpeechless.png',
+    '20250405emoticons-SheetSweat.png', '20250405emoticons-SheetThinking.png', '20250405emoticons-SheetTongue.png',
+    '20250405emoticons-SheetYes.png', '20250405emoticons-Sheetup.png'
+];
+
 // --- ASSETS ---
 const EMOJIS = [
   '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', 
@@ -83,6 +104,8 @@ export default function MemoryGameRoom() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedGridIdx, setSelectedGridIdx] = useState(0);
+  const [activeEmojis, setActiveEmojis] = useState<ActiveEmoji[]>([]);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const channelRef = useRef<any>(null);
   const stateRef = useRef(gameState);
@@ -152,6 +175,9 @@ export default function MemoryGameRoom() {
       })
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
         setChatMessages(p => [...p, payload]);
+      })
+      .on('broadcast', { event: 'emoji' }, ({ payload }) => {
+        handleIncomingEmoji(payload);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -374,6 +400,30 @@ export default function MemoryGameRoom() {
      });
   };
 
+  const handleIncomingEmoji = (payload: ActiveEmoji) => {
+      setActiveEmojis(prev => [...prev, payload]);
+      setTimeout(() => {
+          setActiveEmojis(prev => prev.filter(e => e.id !== payload.id));
+      }, 3000);
+  };
+
+  const handleSendEmoji = async (emojiName: string) => {    
+      const newEmoji: ActiveEmoji = {
+          id: Math.random().toString(36).substr(2, 9),
+          senderId: myUserId,
+          emojiName,
+          timestamp: Date.now()
+      };
+      
+      handleIncomingEmoji(newEmoji); // Show locally
+      await channelRef.current?.send({
+          type: 'broadcast',
+          event: 'emoji',
+          payload: newEmoji
+      });
+      setIsEmojiPickerOpen(false);
+  };
+
   // --- RENDER HELPERS ---
   const getGridClass = () => {
       // Return tailwind grid cols class
@@ -433,7 +483,63 @@ export default function MemoryGameRoom() {
              </div>
 
              {/* Game Area */}
-             <div className="flex-1 overflow-y-auto p-4 bg-[var(--bg-tertiary)] flex items-center justify-center">
+             <div className="flex-1 overflow-y-auto p-4 bg-[var(--bg-tertiary)] flex items-center justify-center relative">
+                 
+                 {/* Emojis Overlay */}
+                 <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                    {activeEmojis.map(emoji => (
+                        <div 
+                            key={emoji.id} 
+                            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
+                            style={{
+                                top: emoji.senderId === myUserId ? '70%' : '30%',
+                                left: emoji.senderId === myUserId ? '50%' : Math.random() > 0.5 ? '30%' : '70%'
+                            }}
+                        >
+                            <div 
+                              className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                              style={{ 
+                                  backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                  backgroundSize: '10rem 8rem',
+                                  backgroundPosition: '-8rem -2rem'
+                              }}
+                            ></div>
+                        </div>
+                    ))}
+                 </div>
+
+                 {/* Emoji Toggle Button */}
+                 <div className="absolute bottom-6 right-6 z-40">
+                    <div className="relative">
+                        <button 
+                            onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                            className="w-12 h-12 rounded-full bg-yellow-500 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform relative z-10"
+                        >
+                            {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small text-xl"></i> : <i className="fi fi-rr-smile text-xl"></i>}
+                        </button>
+                        
+                        {isEmojiPickerOpen && (
+                            <div className="absolute bottom-16 right-0 w-[300px] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl overflow-hidden grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                {AVAILABLE_EMOJIS.map((emoji) => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => handleSendEmoji(emoji)}
+                                        className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                                    >
+                                        <div
+                                        className="w-8 h-8 bg-no-repeat"
+                                        style={{
+                                            backgroundImage: `url(/emoji/${emoji})`,
+                                            backgroundSize: '10rem 8rem',
+                                            backgroundPosition: '-8rem -2rem'
+                                        }}
+                                        ></div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                 </div>
                  
                  {/* Setup Phase */}
                  {gameState.phase === 'setup' && (

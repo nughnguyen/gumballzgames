@@ -14,6 +14,27 @@ import Sidebar from '@/components/layout/Sidebar';
 import ChatPanel from '@/components/game/ChatPanel';
 import { ChatMessage } from '@/types';
 
+interface ActiveEmoji {
+    id: string;
+    senderId: string;
+    emojiName: string;
+    timestamp: number;
+}
+  
+const AVAILABLE_EMOJIS = [
+    '20250405emoticons-SheetAngry.png', '20250405emoticons-SheetCant.png', '20250405emoticons-SheetCome.png',
+    '20250405emoticons-SheetCrying.png', '20250405emoticons-SheetCute.png', '20250405emoticons-SheetDizzy.png',
+    '20250405emoticons-SheetDown.png', '20250405emoticons-SheetDrooling.png', '20250405emoticons-SheetEager.png',
+    '20250405emoticons-SheetExclamation.png', '20250405emoticons-SheetFrustrated.png', '20250405emoticons-SheetHeadblown.png',
+    '20250405emoticons-SheetIdea.png', '20250405emoticons-SheetKissing.png', '20250405emoticons-SheetLaughing.png',
+    '20250405emoticons-SheetLeft.png', '20250405emoticons-SheetLit.png', '20250405emoticons-SheetLove.png',
+    '20250405emoticons-SheetNeutral.png', '20250405emoticons-SheetNo.png', '20250405emoticons-SheetOMG.png',
+    '20250405emoticons-SheetOk.png', '20250405emoticons-SheetQuestion.png', '20250405emoticons-SheetRight.png',
+    '20250405emoticons-SheetSilence.png', '20250405emoticons-SheetSleepy.png', '20250405emoticons-SheetSpeechless.png',
+    '20250405emoticons-SheetSweat.png', '20250405emoticons-SheetThinking.png', '20250405emoticons-SheetTongue.png',
+    '20250405emoticons-SheetYes.png', '20250405emoticons-Sheetup.png'
+];
+
 // Helper to get relative position for UI (Bottom (Me), Left, Top, Right)
 function getRelativeHeader(myIndex: number, targetIndex: number, totalPlayers: number) {
     if (totalPlayers === 2) {
@@ -42,6 +63,8 @@ export default function UnoRoomPage() {
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [logs, setLogs] = useState<string[]>([]);
     const [showColorPicker, setShowColorPicker] = useState<number | null>(null); // If playing wild, store card ID here
+    const [activeEmojis, setActiveEmojis] = useState<ActiveEmoji[]>([]);
+    const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
     
     const channelRef = useRef<any>(null);
     
@@ -98,6 +121,9 @@ export default function UnoRoomPage() {
             })
             .on('broadcast', { event: 'chat' }, ({ payload }) => {
                 setChatMessages(p => [...p, payload]);
+            })
+            .on('broadcast', { event: 'emoji' }, ({ payload }) => {
+                handleIncomingEmoji(payload);
             })
              .on('broadcast', { event: 'gameAction' }, ({ payload }) => {
                  // Trigger handleAction safely? 
@@ -170,6 +196,30 @@ export default function UnoRoomPage() {
 
 
     // --- Actions ---
+
+    const handleIncomingEmoji = (payload: ActiveEmoji) => {
+        setActiveEmojis(prev => [...prev, payload]);
+        setTimeout(() => {
+            setActiveEmojis(prev => prev.filter(e => e.id !== payload.id));
+        }, 3000);
+    };
+
+    const handleSendEmoji = async (emojiName: string) => {    
+        const newEmoji: ActiveEmoji = {
+            id: Math.random().toString(36).substr(2, 9),
+            senderId: mySessionId,
+            emojiName,
+            timestamp: Date.now()
+        };
+        
+        handleIncomingEmoji(newEmoji); // Show locally
+        await channelRef.current?.send({
+            type: 'broadcast',
+            event: 'emoji',
+            payload: newEmoji
+        });
+        setIsEmojiPickerOpen(false);
+    };
 
     const handleStartGame = async () => {
         if (localPlayers.length < 2) {
@@ -476,6 +526,65 @@ export default function UnoRoomPage() {
                     {/* Game Canvas */}
                     <div className="flex-1 relative bg-[url('/uno/table_bg.png')] bg-cover bg-center flex items-center justify-center overflow-hidden">
                         <div className="absolute inset-0 bg-[#0f172a] opacity-90"></div>
+                        
+                        {/* Emojis Overlay */}
+                        <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                            {activeEmojis.map(emoji => (
+                                <div 
+                                    key={emoji.id} 
+                                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
+                                    style={{
+                                        // Simple positioning based on sender? 
+                                        // Ideally we map senderId to position but that's complex since we have relative positions.
+                                        // Let's just randomize slightly or center them for now to ensure visibility.
+                                        top: emoji.senderId === mySessionId ? '70%' : '30%',
+                                        left: emoji.senderId === mySessionId ? '50%' : Math.random() > 0.5 ? '30%' : '70%'
+                                    }}
+                                >
+                                    <div 
+                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                    style={{ 
+                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                        backgroundSize: '10rem 8rem',
+                                        backgroundPosition: '-8rem -2rem'
+                                    }}
+                                    ></div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Emoji Toggle Button (Floating) */}
+                         <div className="absolute bottom-8 right-8 z-40">
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                                    className="w-12 h-12 rounded-full bg-yellow-500 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform relative z-10"
+                                >
+                                    {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small text-xl"></i> : <i className="fi fi-rr-smile text-xl"></i>}
+                                </button>
+                                
+                                {isEmojiPickerOpen && (
+                                    <div className="absolute bottom-16 right-0 w-[300px] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl overflow-hidden grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                        {AVAILABLE_EMOJIS.map((emoji) => (
+                                            <button
+                                                key={emoji}
+                                                onClick={() => handleSendEmoji(emoji)}
+                                                className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                                            >
+                                                <div
+                                                className="w-8 h-8 bg-no-repeat"
+                                                style={{
+                                                    backgroundImage: `url(/emoji/${emoji})`,
+                                                    backgroundSize: '10rem 8rem',
+                                                    backgroundPosition: '-8rem -2rem'
+                                                }}
+                                                ></div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                         </div>
                         
                         {/* CENTER: Deck & Discard */}
                         <div className="relative z-0 flex items-center gap-8 p-8 bg-white/5 rounded-full backdrop-blur-sm border border-white/10 shadow-2xl">
