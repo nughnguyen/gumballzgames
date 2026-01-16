@@ -647,31 +647,49 @@ export default function MemoryGameRoom() {
                                         perspective: '1000px'
                                     }}
                                     className={`
-                                        w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-32 
-                                        relative group cursor-pointer transition-transform duration-300
-                                        ${(card.isFlipped || card.isMatched) ? '[transform:rotateY(180deg)]' : 'hover:scale-105'}
+                                        w-16 sm:w-20 md:w-24 lg:w-28 aspect-square
+                                        relative group cursor-pointer transition-all duration-500 ease-out
+                                        ${(card.isFlipped || card.isMatched) ? '[transform:rotateY(180deg)]' : 'hover:scale-105 hover:-translate-y-2'}
                                     `}
                                  >
                                      <div className={`
                                         absolute inset-0 w-full h-full 
-                                        transition-all duration-500 [transform-style:preserve-3d]
+                                        transition-all duration-500 [transform-style:preserve-3d] shadow-xl rounded-xl
                                         ${(card.isFlipped || card.isMatched) ? '[transform:rotateY(180deg)]' : ''}
                                      `}>
-                                         {/* FRONT (Hidden) */}
-                                         <div className="absolute inset-0 w-full h-full bg-[var(--bg-secondary)] border-2 border-[var(--border-primary)] rounded-xl flex items-center justify-center [backface-visibility:hidden]">
-                                             <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 rounded-xl"></div>
-                                             <span className="text-3xl opacity-50">?</span>
+                                         {/* FRONT (Hidden / Card Back) - Premium Design */}
+                                         <div className="absolute inset-0 w-full h-full rounded-xl [backface-visibility:hidden] overflow-hidden border border-white/10">
+                                            {/* Vibrant Gradient Background */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-orange-500 opacity-90"></div>
+                                            
+                                            {/* Pattern Overlay */}
+                                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat"></div>
+                                            
+                                            {/* Glassmorphism Shine */}
+                                            <div className="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shine" />
+
+                                            {/* Center Icon */}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <i className="fi fi-rr-gamepad text-3xl md:text-4xl text-white drop-shadow-md opacity-80 group-hover:scale-110 transition-transform duration-300"></i>
+                                            </div>
                                          </div>
 
-                                         {/* BACK (Revealed) */}
+                                         {/* BACK (Revealed / Card Face) */}
                                          <div className={`
                                             absolute inset-0 w-full h-full rounded-xl flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)]
                                             bg-[var(--bg-secondary)] border-2
                                             ${card.isMatched 
-                                                ? (card.matchedBy === myUserId ? 'border-[var(--accent-green)] shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]')
-                                                : 'border-[var(--text-primary)]'}
+                                                ? (card.matchedBy === myUserId ? 'border-[var(--accent-green)] shadow-[0_0_20px_rgba(34,197,94,0.5)] bg-green-900/10' : 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] bg-red-900/10')
+                                                : 'border-[var(--border-primary)] shadow-inner'}
                                          `}>
-                                             <span className="text-4xl">{card.icon}</span>
+                                             <span className="text-4xl md:text-5xl drop-shadow-sm filter saturate-150 transform transition-transform duration-300 hover:scale-110">{card.icon}</span>
+                                             
+                                             {/* Checkmark for matched */}
+                                             {card.isMatched && (
+                                                 <div className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${card.matchedBy === myUserId ? 'bg-green-500' : 'bg-red-500'} text-white text-[10px]`}>
+                                                     <i className="fi fi-rr-check"></i>
+                                                 </div>
+                                             )}
                                          </div>
                                      </div>
                                  </button>
