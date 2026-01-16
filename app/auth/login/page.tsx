@@ -47,7 +47,13 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "circOut" }}
         className="w-full max-w-md relative z-10 p-4"
       >
-        <div className="bg-secondary shadow-2xl rounded-xl border border-border-primary overflow-hidden">
+        <div className="bg-secondary shadow-2xl rounded-xl border border-border-primary overflow-hidden relative">
+          {/* Close Button */}
+          <Link href="/" className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary transition-colors p-1 z-20">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </Link>
           {/* Header */}
           <div className="pt-8 pb-6 px-8 text-center bg-secondary-dark/50 border-b border-border-secondary">
             <h1 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">Welcome Back</h1>
@@ -136,6 +142,12 @@ export default function LoginPage() {
               </Link>
             </p>
              <div className="mt-3 pt-3 border-t border-border-secondary">
+               <p className="text-text-secondary text-sm mb-3">
+                  Just want to play?{' '}
+                  <Link href="/" className="text-accent-green font-semibold hover:underline">
+                      Play as Guest
+                  </Link>
+               </p>
                <Link href="/" className="text-xs text-text-tertiary hover:text-text-secondary transition-colors">
                   ← Back to Home
                </Link>
