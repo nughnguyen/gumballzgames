@@ -180,9 +180,17 @@ export default function CaroGamePage() {
         const p1 = sortedUsers[0];
         const p2 = sortedUsers[1];
 
-        if (p1?.user_id === myPresenceId) setMySymbol('X');
-        else if (p2?.user_id === myPresenceId) setMySymbol('O');
-        else setMySymbol(null); 
+        // Randomize starting player (X goes first) based on Room Code hash
+        // This ensures both clients agree on who is X without extra state exchange
+        const roomHash = roomCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const p1IsX = roomHash % 2 === 0;
+
+        // Only update symbol if game is NOT playing (prevent swapping mid-game)
+        if (gameStatusRef.current !== 'playing') {
+             if (p1?.user_id === myPresenceId) setMySymbol(p1IsX ? 'X' : 'O');
+             else if (p2?.user_id === myPresenceId) setMySymbol(p1IsX ? 'O' : 'X');
+             else setMySymbol(null); 
+        } 
         
 
         // Let's fix updateRoomHeartbeat to use room_code first in next step or now.
@@ -380,10 +388,14 @@ export default function CaroGamePage() {
         const p1 = sortedUsers[0];
         const p2 = sortedUsers[1];
 
+        // Randomize starting player (X goes first) based on Room Code hash
+        const roomHash = roomCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const p1IsX = roomHash % 2 === 0;
+
         // Only update symbol if game is NOT playing (prevent swapping mid-game)
         if (gameStatusRef.current !== 'playing') {
-             if (p1?.user_id === myPresenceId) setMySymbol('X');
-             else if (p2?.user_id === myPresenceId) setMySymbol('O');
+             if (p1?.user_id === myPresenceId) setMySymbol(p1IsX ? 'X' : 'O');
+             else if (p2?.user_id === myPresenceId) setMySymbol(p1IsX ? 'O' : 'X');
              else setMySymbol(null); 
         }
 

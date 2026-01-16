@@ -71,7 +71,7 @@ export default function CaroPage() {
                          // We should prefix it 'CR-'? No, createRoom does not prefix automatically for id usually, but for room_code yes.
                          // Let's rely on standard ID flow.
                          
-                         const fullCode = roomCode.startsWith('CR-') ? roomCode : `CR-${roomCode}`;
+                         const fullCode = roomCode;
                          await createRoom(fullCode, 'caro', myId, myNickname);
 
                          await channel.send({

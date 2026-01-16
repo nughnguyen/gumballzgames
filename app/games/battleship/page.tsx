@@ -57,13 +57,11 @@ export default function BattleshipPage() {
             
             // To avoid race conditions, only one side creates the key.
             // Convention: The one with lexicographically 'larger' sessionId creates the room
+            // To avoid race conditions, only one side creates the key.
+            // Convention: The one with lexicographically 'larger' sessionId creates the room
             if (sessionId > opponent.sessionId) {
-              // Ensure we use the proper prefix 'BS-' regardless of what generator returns
-              // If generateRoomCode returns 'ABCDEF', we should make sure it's 'BS-ABCDEF'
-              // Wait, createRoom stores it as uppercase.
-              // Let's rely on standard format: 'BS-' + 6 chars
               const rawCode = generateRoomCode(); // Assume 6 chars
-              const roomId = `BS-${rawCode}`; 
+              const roomId = rawCode; 
               
               await createRoom(roomId, 'battleship', myId, myNickname);
               
@@ -219,9 +217,6 @@ export default function BattleshipPage() {
                                     const input = document.getElementById('roomCodeInput') as HTMLInputElement;
                                     let code = input.value.trim().toUpperCase();
                                     if(code) {
-                                      if(!code.startsWith('BS-')) {
-                                         code = 'BS-' + code;
-                                      }
                                       router.push(`/game/battleship/${code}`);
                                     }
                                 }}

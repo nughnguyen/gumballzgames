@@ -101,7 +101,6 @@ export default function UnoPage() {
                                     const input = document.getElementById('roomCodeInput') as HTMLInputElement;
                                       let code = input.value.trim().toUpperCase();
                                     if(code) {
-                                      if(!code.startsWith('UO-')) code = 'UO-' + code;
                                       router.push(`/game/uno/${code}`);
                                     }
                                 }}
