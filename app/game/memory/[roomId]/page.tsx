@@ -458,7 +458,19 @@ export default function MemoryGameRoom() {
                      
                      {/* Scoreboard */}
                      {gameState.phase !== 'setup' && onlineUsers.map(u => (
-                         <div key={u.user_id} className={`flex items-center gap-1 ${gameState.turn === u.user_id ? 'font-bold text-[var(--accent-green)]' : 'text-[var(--text-secondary)]'}`}>
+                         <div key={u.user_id} className={`relative flex items-center gap-1 ${gameState.turn === u.user_id ? 'font-bold text-[var(--accent-green)]' : 'text-[var(--text-secondary)]'}`}>
+                             {activeEmojis.filter(e => e.senderId === u.user_id).map(emoji => (
+                                <div key={emoji.id} className="absolute -bottom-16 left-1/2 -translate-x-1/2 z-50 animate-bounce-in pointer-events-none">
+                                    <div 
+                                      className="w-12 h-12 bg-no-repeat drop-shadow-lg filter brightness-110"
+                                      style={{ 
+                                          backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                          backgroundSize: '7.5rem 6rem',
+                                          backgroundPosition: '-6rem -1.5rem'
+                                      }}
+                                    ></div>
+                                </div>
+                             ))}
                              <span>{u.nickname}:</span>
                              <span>{gameState.scores[u.user_id] || 0}</span>
                          </div>
@@ -466,16 +478,47 @@ export default function MemoryGameRoom() {
                   </div>
                </div>
                
-               <div className="flex items-center gap-2">
-                 <button onClick={() => {
-                        const url = `${window.location.origin}/game/memory/${roomId}`;
-                        navigator.clipboard.writeText(url);
-                        addLog("Link copied!");
-                    }} 
-                    className="p-2 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--border-primary)] transition-colors"
-                 >
-                     <i className="fi fi-rr-share"></i>
-                 </button>
+                 <div className="flex items-center gap-2">
+                     {/* Emoji Toggle */}
+                     <button 
+                        onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                        className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 flex items-center justify-center hover:scale-110 transition-transform"
+                        title="Send Emoji"
+                     >
+                         {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
+                     </button>
+                     
+                     {/* Picker */}
+                     {isEmojiPickerOpen && (
+                        <div className="absolute top-16 right-4 w-[350px] max-w-[90vw] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl z-[100] grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            {AVAILABLE_EMOJIS.map((emoji) => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => handleSendEmoji(emoji)}
+                                    className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                                >
+                                    <div
+                                    className="w-8 h-8 bg-no-repeat"
+                                    style={{
+                                        backgroundImage: `url(/emoji/${emoji})`,
+                                        backgroundSize: '10rem 8rem',
+                                        backgroundPosition: '-8rem -2rem'
+                                    }}
+                                    ></div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                   <button onClick={() => {
+                          const url = `${window.location.origin}/game/memory/${roomId}`;
+                          navigator.clipboard.writeText(url);
+                          addLog("Link copied!");
+                      }} 
+                      className="p-2 bg-[var(--bg-tertiary)] rounded-lg hover:bg-[var(--border-primary)] transition-colors"
+                   >
+                       <i className="fi fi-rr-share"></i>
+                   </button>
                  <button onClick={() => router.push('/games/memory')} className="p-2 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                      <i className="fi fi-rr-exit"></i>
                  </button>
@@ -485,61 +528,7 @@ export default function MemoryGameRoom() {
              {/* Game Area */}
              <div className="flex-1 overflow-y-auto p-4 bg-[var(--bg-tertiary)] flex items-center justify-center relative">
                  
-                 {/* Emojis Overlay */}
-                 <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-                    {activeEmojis.map(emoji => (
-                        <div 
-                            key={emoji.id} 
-                            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
-                            style={{
-                                top: emoji.senderId === myUserId ? '70%' : '30%',
-                                left: emoji.senderId === myUserId ? '50%' : Math.random() > 0.5 ? '30%' : '70%'
-                            }}
-                        >
-                            <div 
-                              className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
-                              style={{ 
-                                  backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                  backgroundSize: '10rem 8rem',
-                                  backgroundPosition: '-8rem -2rem'
-                              }}
-                            ></div>
-                        </div>
-                    ))}
-                 </div>
 
-                 {/* Emoji Toggle Button */}
-                 <div className="absolute bottom-6 right-6 z-40">
-                    <div className="relative">
-                        <button 
-                            onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                            className="w-12 h-12 rounded-full bg-yellow-500 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform relative z-10"
-                        >
-                            {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small text-xl"></i> : <i className="fi fi-rr-smile text-xl"></i>}
-                        </button>
-                        
-                        {isEmojiPickerOpen && (
-                            <div className="absolute bottom-16 right-0 w-[300px] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl overflow-hidden grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                {AVAILABLE_EMOJIS.map((emoji) => (
-                                    <button
-                                        key={emoji}
-                                        onClick={() => handleSendEmoji(emoji)}
-                                        className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
-                                    >
-                                        <div
-                                        className="w-8 h-8 bg-no-repeat"
-                                        style={{
-                                            backgroundImage: `url(/emoji/${emoji})`,
-                                            backgroundSize: '10rem 8rem',
-                                            backgroundPosition: '-8rem -2rem'
-                                        }}
-                                        ></div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                 </div>
                  
                  {/* Setup Phase */}
                  {gameState.phase === 'setup' && (

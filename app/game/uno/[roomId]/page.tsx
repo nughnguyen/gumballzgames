@@ -410,7 +410,7 @@ export default function UnoRoomPage() {
     // Calculate layout rotation
     // We want Me at Bottom (Order 0 visual).
     // Others rotated clockwise.
-    const orderedPlayers = [];
+    const orderedPlayers: Player[] = [];
     if (myPlayerIndex !== -1) {
         for(let i=0; i<gameState.players.length; i++) {
             orderedPlayers.push(gameState.players[(myPlayerIndex + i) % gameState.players.length]);
@@ -501,6 +501,38 @@ export default function UnoRoomPage() {
                                 <span>ID: {roomId}</span>
                                 <i className="fi fi-rr-copy"></i>
                              </button>
+
+
+                             {/* Emoji Toggle */}
+                             <button 
+                                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                                className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 flex items-center justify-center hover:scale-110 transition-transform ml-2"
+                                title="Send Emoji"
+                             >
+                                 {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small"></i> : <i className="fi fi-rr-smile"></i>}
+                             </button>
+                             
+                             {/* Emoji Picker Dropdown */}
+                             {isEmojiPickerOpen && (
+                                <div className="absolute top-16 left-4 w-[350px] max-w-[90vw] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl z-[100] grid grid-cols-6 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                    {AVAILABLE_EMOJIS.map((emoji) => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => handleSendEmoji(emoji)}
+                                            className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
+                                        >
+                                            <div
+                                            className="w-8 h-8 bg-no-repeat"
+                                            style={{
+                                                backgroundImage: `url(/emoji/${emoji})`,
+                                                backgroundSize: '10rem 8rem',
+                                                backgroundPosition: '-8rem -2rem'
+                                            }}
+                                            ></div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-sm mt-1">
                              <span 
@@ -527,64 +559,7 @@ export default function UnoRoomPage() {
                     <div className="flex-1 relative bg-[url('/uno/table_bg.png')] bg-cover bg-center flex items-center justify-center overflow-hidden">
                         <div className="absolute inset-0 bg-[#0f172a] opacity-90"></div>
                         
-                        {/* Emojis Overlay */}
-                        <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-                            {activeEmojis.map(emoji => (
-                                <div 
-                                    key={emoji.id} 
-                                    className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
-                                    style={{
-                                        // Simple positioning based on sender? 
-                                        // Ideally we map senderId to position but that's complex since we have relative positions.
-                                        // Let's just randomize slightly or center them for now to ensure visibility.
-                                        top: emoji.senderId === mySessionId ? '70%' : '30%',
-                                        left: emoji.senderId === mySessionId ? '50%' : Math.random() > 0.5 ? '30%' : '70%'
-                                    }}
-                                >
-                                    <div 
-                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
-                                    style={{ 
-                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                        backgroundSize: '10rem 8rem',
-                                        backgroundPosition: '-8rem -2rem'
-                                    }}
-                                    ></div>
-                                </div>
-                            ))}
-                        </div>
 
-                        {/* Emoji Toggle Button (Floating) */}
-                         <div className="absolute bottom-8 right-8 z-40">
-                            <div className="relative">
-                                <button 
-                                    onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                                    className="w-12 h-12 rounded-full bg-yellow-500 text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform relative z-10"
-                                >
-                                    {isEmojiPickerOpen ? <i className="fi fi-rr-cross-small text-xl"></i> : <i className="fi fi-rr-smile text-xl"></i>}
-                                </button>
-                                
-                                {isEmojiPickerOpen && (
-                                    <div className="absolute bottom-16 right-0 w-[300px] bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl p-4 shadow-2xl overflow-hidden grid grid-cols-5 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                        {AVAILABLE_EMOJIS.map((emoji) => (
-                                            <button
-                                                key={emoji}
-                                                onClick={() => handleSendEmoji(emoji)}
-                                                className="w-10 h-10 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 flex items-center justify-center"
-                                            >
-                                                <div
-                                                className="w-8 h-8 bg-no-repeat"
-                                                style={{
-                                                    backgroundImage: `url(/emoji/${emoji})`,
-                                                    backgroundSize: '10rem 8rem',
-                                                    backgroundPosition: '-8rem -2rem'
-                                                }}
-                                                ></div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                         </div>
                         
                         {/* CENTER: Deck & Discard */}
                         <div className="relative z-0 flex items-center gap-8 p-8 bg-white/5 rounded-full backdrop-blur-sm border border-white/10 shadow-2xl">
@@ -630,6 +605,20 @@ export default function UnoRoomPage() {
                         {/* BOTTOM: ME */}
                         <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
                              <div className="pointer-events-auto max-w-[90%] overflow-visible">
+                                {/* My Emojis */}
+                                {activeEmojis.filter(e => e.senderId === mySessionId).map(emoji => (
+                                    <div key={emoji.id} className="absolute -top-24 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
+                                         <div 
+                                            className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                            style={{ 
+                                                backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                                backgroundSize: '10rem 8rem',
+                                                backgroundPosition: '-8rem -2rem'
+                                            }}
+                                        ></div>
+                                    </div>
+                                ))}
+
                                 <div className={`flex -space-x-12 hover:space-x-1 transition-all duration-300 p-4 min-h-[160px] items-end justify-center`}>
                                     {(me?.hand || []).map((cId) => {
                                         const isValid = isMyTurn && validateMove(gameState, mySessionId, cId);
@@ -668,7 +657,20 @@ export default function UnoRoomPage() {
     
                         {/* TOP: Opponent 2 (Across) */}
                         {orderedPlayers.length > 2 && (
-                             <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                             <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 relative">
+                                 {/* Emojis for Player 2 */}
+                                 {orderedPlayers[2]?.id && activeEmojis.filter(e => e.senderId === orderedPlayers[2]!.id).map(emoji => (
+                                     <div key={emoji.id} className="absolute -bottom-16 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
+                                         <div 
+                                             className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                             style={{ 
+                                                 backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                                 backgroundSize: '10rem 8rem',
+                                                 backgroundPosition: '-8rem -2rem'
+                                             }}
+                                         ></div>
+                                     </div>
+                                 ))}
                                  <div className="flex bg-black/40 px-3 py-1 rounded-lg backdrop-blur text-white items-center gap-2">
                                     <i className="fi fi-rr-user"></i>
                                     {orderedPlayers[2]?.name} ({orderedPlayers[2]?.hand.length})
@@ -685,6 +687,19 @@ export default function UnoRoomPage() {
                         {/* LEFT: Opponent 1 */}
                         {orderedPlayers.length > 1 && (
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 -rotate-90 origin-left ml-16">
+                                 {/* Emojis for Player 1 */}
+                                 {orderedPlayers[1]?.id && activeEmojis.filter(e => e.senderId === orderedPlayers[1]!.id).map(emoji => (
+                                     <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 animate-bounce-in rotate-90">
+                                         <div 
+                                             className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                             style={{ 
+                                                 backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                                 backgroundSize: '10rem 8rem',
+                                                 backgroundPosition: '-8rem -2rem'
+                                             }}
+                                         ></div>
+                                     </div>
+                                 ))}
                                  <div className="flex bg-black/40 px-3 py-1 rounded-lg backdrop-blur text-white items-center gap-2">
                                     <i className="fi fi-rr-user"></i>
                                     {orderedPlayers[1]?.name} ({orderedPlayers[1]?.hand.length})
@@ -701,6 +716,19 @@ export default function UnoRoomPage() {
                          {/* RIGHT: Opponent 3 */}
                         {orderedPlayers.length > 3 && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rotate-90 origin-right mr-16">
+                                 {/* Emojis for Player 3 */}
+                                 {orderedPlayers[3]?.id && activeEmojis.filter(e => e.senderId === orderedPlayers[3]!.id).map(emoji => (
+                                     <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 animate-bounce-in -rotate-90">
+                                          <div 
+                                             className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                             style={{ 
+                                                 backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                                 backgroundSize: '10rem 8rem',
+                                                 backgroundPosition: '-8rem -2rem'
+                                             }}
+                                         ></div>
+                                     </div>
+                                 ))}
                                  <div className="flex bg-black/40 px-3 py-1 rounded-lg backdrop-blur text-white items-center gap-2">
                                     <i className="fi fi-rr-user"></i>
                                     {orderedPlayers[3]?.name} ({orderedPlayers[3]?.hand.length})

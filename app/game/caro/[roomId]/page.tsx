@@ -609,27 +609,7 @@ export default function CaroGamePage() {
       
       <div className="flex-1 flex flex-col md:flex-row relative max-w-full">
         <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-            {/* Emojis Overlay */}
-            <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-                {activeEmojis.map(emoji => (
-                    <div 
-                        key={emoji.id} 
-                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center animate-bounce-in`}
-                        style={{
-                            top: emoji.senderId === (user?.id || (user as any)?.guestId) ? '70%' : '30%'
-                        }}
-                    >
-                        <div 
-                          className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
-                          style={{ 
-                              backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                              backgroundSize: '10rem 8rem',
-                              backgroundPosition: '-8rem -2rem'
-                          }}
-                        ></div>
-                    </div>
-                ))}
-            </div>
+
             {/* Header */}
             <div className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] flex justify-between items-center shrink-0 z-10">
                <div>
@@ -709,35 +689,45 @@ export default function CaroGamePage() {
                     </div>
                 )}
                 
-               {/* Controls */}
-                <div className="flex items-center gap-2">
-                    <button 
-                       onClick={() => {
-                           navigator.clipboard.writeText(roomCode);
-                           setChatMessages(prev => [...prev, {
-                               id: Date.now().toString(),
-                               senderId: 'system',
-                               senderName: 'System',
-                               content: 'Room ID copied to clipboard.',
-                               timestamp: Date.now(),
-                               isSystem: true
-                           }]);
-                       }}
-                       title="Copy Room ID"
-                       className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-mono hover:text-[var(--accent-green)] hover:bg-[var(--bg-secondary)] border border-[var(--border-primary)] flex items-center gap-2 transition-all"
-                    >
-                       <span>ID: {roomCode}</span>
-                       <i className="fi fi-rr-copy"></i>
-                    </button>
-                 </div>
+
                  <div className="flex items-center gap-2 text-sm mt-1">
-                   <span className={`flex items-center gap-1 ${currentPlayer === mySymbol ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]'}`}>
-                     {currentPlayer === mySymbol ? 'Your Turn' : "Opponent's Turn"}
-                   </span>
+                   <div className="relative">
+                       {/* My Emojis */}
+                       {activeEmojis.filter(e => e.senderId === (user?.id || (user as any)?.guestId)).map(emoji => (
+                            <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce-in z-50">
+                                <div 
+                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                    style={{ 
+                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                        backgroundSize: '10rem 8rem',
+                                        backgroundPosition: '-8rem -2rem'
+                                    }}
+                                ></div>
+                            </div>
+                       ))}
+                       <span className={`flex items-center gap-1 ${currentPlayer === mySymbol ? 'text-[var(--accent-green)] font-bold' : 'text-[var(--text-secondary)]'}`}>
+                         {currentPlayer === mySymbol ? 'Your Turn' : "Opponent's Turn"}
+                       </span>
+                   </div>
                    <span className="text-[var(--border-primary)]">|</span>
-                    <span className="text-[var(--text-tertiary)]">
-                      Vs: {opponentName}
-                    </span>
+                    <div className="relative">
+                        {/* Opponent Emojis */}
+                        {activeEmojis.filter(e => e.senderId !== (user?.id || (user as any)?.guestId)).map(emoji => (
+                            <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce-in z-50">
+                                <div 
+                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                    style={{ 
+                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
+                                        backgroundSize: '10rem 8rem',
+                                        backgroundPosition: '-8rem -2rem'
+                                    }}
+                                ></div>
+                            </div>
+                       ))}
+                       <span className="text-[var(--text-tertiary)]">
+                         Vs: {opponentName}
+                       </span>
+                    </div>
                  </div>
                </div>
               
