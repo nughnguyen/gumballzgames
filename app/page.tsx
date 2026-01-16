@@ -22,8 +22,16 @@ function HomeContent() {
 
   useEffect(() => {
     const skipWelcome = searchParams.get('skip_welcome');
-    if (!loading && !user && !isGuest && !skipWelcome) {
-      setShowGuestModal(true);
+    const guestMode = searchParams.get('guest_mode');
+
+    if (!loading && !user && !isGuest) {
+      if (guestMode) {
+        setShowGuestModal(true);
+        setModalView('guest-input');
+      } else if (!skipWelcome) {
+        setShowGuestModal(true);
+        setModalView('initial');
+      }
     }
   }, [loading, user, isGuest, searchParams]);
 

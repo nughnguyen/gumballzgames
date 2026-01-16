@@ -198,7 +198,7 @@ export default function RegisterPage() {
             <div className="mt-3 pt-3 border-t border-border-secondary">
                <p className="text-text-secondary text-sm">
                   Just want to play?{' '}
-                  <Link href="/?skip_welcome=true" className="text-accent-green font-semibold hover:underline">
+                  <Link href="/?guest_mode=true" className="text-accent-green font-semibold hover:underline">
                       Play as Guest
                   </Link>
                </p>
