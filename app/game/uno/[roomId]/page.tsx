@@ -609,13 +609,11 @@ export default function UnoRoomPage() {
                                 {activeEmojis.filter(e => e.senderId === mySessionId).map(emoji => (
                                     <div key={emoji.id} className="absolute -top-24 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
                                          <div 
-                                            className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
-                                            style={{ 
-                                                backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                                backgroundSize: '10rem 8rem',
-                                                backgroundPosition: '-8rem -2rem'
-                                            }}
-                                        ></div>
+                                             className="emoji-sprite-anim drop-shadow-2xl filter brightness-110"
+                                             style={{ 
+                                                 backgroundImage: `url(/emoji/${emoji.emojiName})`
+                                             }}
+                                         ></div>
                                     </div>
                                 ))}
 

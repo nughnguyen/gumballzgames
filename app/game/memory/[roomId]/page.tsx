@@ -462,11 +462,9 @@ export default function MemoryGameRoom() {
                              {activeEmojis.filter(e => e.senderId === u.user_id).map(emoji => (
                                 <div key={emoji.id} className="absolute -bottom-16 left-1/2 -translate-x-1/2 z-50 animate-bounce-in pointer-events-none">
                                     <div 
-                                      className="w-12 h-12 bg-no-repeat drop-shadow-lg filter brightness-110"
+                                      className="emoji-sprite-anim drop-shadow-lg filter brightness-110"
                                       style={{ 
-                                          backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                          backgroundSize: '7.5rem 6rem',
-                                          backgroundPosition: '-6rem -1.5rem'
+                                          backgroundImage: `url(/emoji/${emoji.emojiName})`
                                       }}
                                     ></div>
                                 </div>

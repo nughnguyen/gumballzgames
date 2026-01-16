@@ -696,11 +696,9 @@ export default function CaroGamePage() {
                        {activeEmojis.filter(e => e.senderId === (user?.id || (user as any)?.guestId)).map(emoji => (
                             <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce-in z-50">
                                 <div 
-                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                    className="emoji-sprite-anim drop-shadow-2xl filter brightness-110"
                                     style={{ 
-                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                        backgroundSize: '10rem 8rem',
-                                        backgroundPosition: '-8rem -2rem'
+                                        backgroundImage: `url(/emoji/${emoji.emojiName})`
                                     }}
                                 ></div>
                             </div>
@@ -715,11 +713,9 @@ export default function CaroGamePage() {
                         {activeEmojis.filter(e => e.senderId !== (user?.id || (user as any)?.guestId)).map(emoji => (
                             <div key={emoji.id} className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce-in z-50">
                                 <div 
-                                    className="w-16 h-16 bg-no-repeat drop-shadow-2xl filter brightness-110"
+                                    className="emoji-sprite-anim drop-shadow-2xl filter brightness-110"
                                     style={{ 
-                                        backgroundImage: `url(/emoji/${emoji.emojiName})`,
-                                        backgroundSize: '10rem 8rem',
-                                        backgroundPosition: '-8rem -2rem'
+                                        backgroundImage: `url(/emoji/${emoji.emojiName})`
                                     }}
                                 ></div>
                             </div>
